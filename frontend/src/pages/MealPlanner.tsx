@@ -29,7 +29,7 @@ const MealPlanner: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-200 p-4">
+    <div className="min-h-screen bg-lightblue p-4">
       <Navbar />
       <h1 className="text-center text-3xl font-bold text-white mb-6">Meal Planner</h1>
 

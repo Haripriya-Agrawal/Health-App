@@ -15,7 +15,7 @@ const data = [
 
 const LogBook: React.FC = () => {
   return (
-    <div className="min-h-screen bg-blue-200 p-4">
+    <div className="min-h-screen bg-lightblue p-4">
       <Navbar />
 
       <div className="max-w-5xl mx-auto bg-pink-50 rounded-3xl p-6 shadow-md">

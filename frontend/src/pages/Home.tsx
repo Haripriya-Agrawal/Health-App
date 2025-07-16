@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 
 const Home: React.FC = () => {
   return (
-    <div className="min-h-screen bg-blue-200 p-4">
+    <div className="min-h-screen bg-lightblue p-4">
       <Navbar />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
         {/* Today's Weight */}

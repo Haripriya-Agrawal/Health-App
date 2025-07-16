@@ -1,4 +1,4 @@
-import React from "react";
+
 import Navbar from "../components/Navbar";
 
 const ProgressCircle = ({ percentage, value }: { percentage: number; value: string }) => (
@@ -32,7 +32,7 @@ const ProgressBar = ({ label, current, total }: { label: string; current: number
 
 const Goals = () => {
   return (
-    <div className="min-h-screen bg-sky-200 px-6 py-8">
+    <div className="min-h-screen bg-lightblue px-6 py-8">
       <Navbar />
 
       <div className="flex flex-wrap justify-center gap-6 mt-10">
