@@ -38,7 +38,7 @@ const MacrosChart = () => (
 
 const ChartCard = ({
   title,
-  chartLabel,
+  
   buttons,
   chartComponent,
 }: {
