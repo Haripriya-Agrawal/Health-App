@@ -9,7 +9,7 @@ const Navbar: React.FC = () => {
   return (
     <div className="w-full px-4 my-4">
       {/* Desktop Navbar */}
-      <nav className="hidden lg:flex items-center justify-between px-6 py-3 bg-gradient-to-b from-[#067BC2] to-[#84BCDA] rounded-full shadow-lg w-fit mx-auto">
+      <nav className="hidden lg:flex items-center justify-between px-6 py-3 bg-gradient-to-b from-[#067BC2] to-[#84BCDA] rounded-full shadow-xl w-fit mx-auto">
         <div className="flex items-center gap-6">
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
             <span className="text-xl font-semibold"><img src={Penguin} alt="" /></span>
