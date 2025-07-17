@@ -14,10 +14,10 @@ const data = [
 
 const LogBook: React.FC = () => {
   return (
-    <div className="min-h-screen bg-lightblue p-2 md:p-4">
+    <div className="min-h-screen bg-lightblue p-6">
       <Navbar />
 
-      <div className="max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl p-3 md:p-4 mt-20 shadow-md">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl md:rounded-2xl p-3 md:p-4 mt-10 shadow-md">
         <div className="overflow-x-auto">
           <table className="w-full text-center border-separate border-spacing-y-1 text-sm md:text-base">
             <thead>

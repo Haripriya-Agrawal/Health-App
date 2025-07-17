@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PenguinCircle from '../assets/pgc.svg';
 import Penguin from '../assets/Penguin.svg'
+import face from '../assets/face.svg'
+import pingu from '../assets/pingu.svg'
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -12,7 +14,7 @@ const Navbar: React.FC = () => {
       <nav className="hidden lg:flex items-center justify-between px-6 py-3 bg-gradient-to-b from-[#067BC2] to-[#84BCDA] rounded-full shadow-xl w-fit mx-auto">
         <div className="flex items-center gap-6">
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-            <span className="text-xl font-semibold"><img src={Penguin} alt="" /></span>
+            <span className="text-xl font-semibold"><img src={face} alt="" /></span>
           </div>
           <Link to="/home" className="text-white font-medium">Home</Link>
           <Link to="/logbook" className="text-white font-medium">LogBook</Link>
@@ -22,7 +24,7 @@ const Navbar: React.FC = () => {
         </div>
         <button className="bg-white text-[#067BC2] px-4 py-1 rounded-full font-semibold shadow-md flex items-center gap-2 ml-8">
           Ask Pebbl
-          <img src={PenguinCircle} alt="Penguin" className="w-6 h-6" />
+          <img src={pingu} alt="Penguin" className="w-6 h-6" />
         </button>
       </nav>
 

@@ -1,6 +1,5 @@
 import Navbar from "../components/Navbar";
 
-
 // Dummy Chart Components
 const LineChart = () => (
   <div className="relative h-full w-full">
@@ -38,7 +37,6 @@ const MacrosChart = () => (
 
 const ChartCard = ({
   title,
-  
   buttons,
   chartComponent,
 }: {
@@ -77,40 +75,29 @@ const ChartCard = ({
 
 const Dashboard = () => {
   return (
-    <div className="bg-lightblue  min-h-screen p-4">
-      <div className="pt-6">
-        <Navbar />
-      </div>
+    <div className="min-h-screen bg-lightblue p-6">
+      <Navbar />
 
-      <div className="flex flex-col items-center">
-        {/* <h1 className="text-2xl font-bold text-[#00263D] my-6">Health Dashboard</h1> */}
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-6xl mt-12 mx-auto">
-          {/* Weight Trends Card */}
+      <div className="flex flex-col items-center mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
           <ChartCard
             title="Weight Trends"
             chartLabel="Line chart"
             buttons={["Daily", "Weekly", "Monthly"]}
             chartComponent={<LineChart />}
           />
-          
-          {/* Activity Card */}
           <ChartCard
             title="Activity"
             chartLabel="Bar chart"
             buttons={["Steps", "Duration", "Calories"]}
             chartComponent={<ActivityChart />}
           />
-          
-          {/* Calorie Intake Card */}
           <ChartCard
             title="Calorie Intake"
             chartLabel="Line chart"
             buttons={["Breakfast", "Lunch", "Dinner"]}
             chartComponent={<LineChart />}
           />
-          
-          {/* Macros Goals Card */}
           <ChartCard
             title="Macros Goals"
             chartLabel="Pie chart"

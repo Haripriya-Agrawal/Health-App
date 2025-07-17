@@ -240,12 +240,12 @@ const Goals = () => {
   const weightPercentage = Math.round((goals.weight.current / goals.weight.target) * 100);
 
   return (
-    <div className="min-h-screen bg-lightblue px-6 py-8">
+    <div className="min-h-screen bg-lightblue p-6">
       <Navbar />
       
       <div className="flex flex-wrap justify-center gap-6 mt-10">
         {/* Left Placeholder - Progress Summary */}
-        <div className="bg-white w-[450px] h-[450px] rounded-2xl p-6 shadow-lg">
+        <div className="bg-white w-[450px] h-[600px] rounded-2xl p-6 shadow-lg">
           <h2 className="text-2xl font-bold text-blue mb-6">Daily Progress</h2>
           
           <div className="space-y-4">

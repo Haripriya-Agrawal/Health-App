@@ -116,7 +116,7 @@ const MealPlannerApp: React.FC = () => {
     <div className="min-h-screen bg-lightblue  p-6">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
         {/* Meal Planner Section */}
         <div className="lg:col-span-2">
           {/* <h1 className="text-4xl font-bold text-white text-center mb-8">Meal Planner</h1> */}
