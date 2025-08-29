@@ -11,7 +11,7 @@ interface GroceryItem {
   name: string;
   category: string;
   unit: string;       // e.g., kg, g, l, ml, pcs, dozen, packet
-  selected: boolean;  // true = available; false = finished/out
+  selected: boolean;  // true = available; false = finished/out (to buy)
 }
 
 interface Meal {
@@ -31,6 +31,7 @@ interface NewItem {
   qty: string;
   category: string;
   unit: string;
+  toBuy: boolean;     // add directly to "To buy" (qty=0)
 }
 
 // ---------- Helpers ----------
@@ -57,12 +58,14 @@ const MealPlannerApp: React.FC = () => {
   // ---- pantry / grocery UI state
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [showToBuy, setShowToBuy] = useState<boolean>(false); // ✅ dedicated To-buy view toggle
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [newItem, setNewItem] = useState<NewItem>({
     name: "",
     qty: "",
     category: "Fresh Produce",
     unit: "kg",
+    toBuy: false,
   });
 
   // ---- plan/templates/macros state
@@ -91,6 +94,7 @@ const MealPlannerApp: React.FC = () => {
   const [macros, setMacros] = useState<MacroInfo>({ calories: 0, carbs: 0, protein: 0, fibre: 0 });
 
   const units = ALLOWED_UNITS.slice();
+  // Note: removed "To buy" from categories (it is now a separate view toggle)
   const categories = ["Fresh Produce", "Dairy", "Grains & Pulses", "Drinks & Snacks", "Misc", "All"];
 
   // ---------- Load pantry + templates + plan (for the current week) ----------
@@ -106,15 +110,15 @@ const MealPlannerApp: React.FC = () => {
           name: p.name,
           category: (p.tags && p.tags[0]) || "Misc",
           unit: p.unit || "pcs",
-          selected: (p.qty ?? 0) > 0, // selected=true means we have stock
+          selected: (p.qty ?? 0) > 0, // true means we have stock
         }));
         setGroceryItems(mapped);
 
-        // Meal templates (used to compute macros for the “Calculate Macros” button)
+        // Meal templates (used for macros)
         const tpls = await mealService.list(); // [{_id,name,mealType,macros}]
         setTemplates(tpls || []);
 
-        // Weekly plan (may be null if none yet)
+        // Weekly plan
         const mp = await mealPlanService.get(weekStart);
         setPlan(mp);
       } catch (e) {
@@ -125,16 +129,22 @@ const MealPlannerApp: React.FC = () => {
     })();
   }, [weekStart]);
 
-  // ---------- Filtered grocery list by category ----------
-  const filteredItems = useMemo(
-    () => (activeCategory === "All" ? groceryItems : groceryItems.filter((i) => i.category === activeCategory)),
-    [groceryItems, activeCategory]
-  );
+  // ---------- Filtered grocery list based on view ----------
+  // RULE:
+  // - showToBuy = true  => only out-of-stock items (!selected), irrespective of category
+  // - showToBuy = false => only in-stock items; if "All" show all in-stock, else filter by category
+  const filteredItems = useMemo(() => {
+    if (showToBuy) return groceryItems.filter((i) => !i.selected);
+    if (activeCategory === "All") return groceryItems.filter((i) => i.selected);
+    return groceryItems.filter((i) => i.selected && i.category === activeCategory);
+  }, [groceryItems, activeCategory, showToBuy]);
 
   // ---------- Toggle pantry item availability (finished/out vs available) ----------
   const toggleItem = async (id: string) => {
     // optimistic UI
-    setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i)));
+    setGroceryItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i))
+    );
 
     try {
       const item = groceryItems.find((i) => i.id === id);
@@ -159,10 +169,10 @@ const MealPlannerApp: React.FC = () => {
       return;
     }
 
-    // Default to 1 so the new item appears available (not crossed out)
+    // If "Add to To buy" is checked => qty=0 (out of stock). Otherwise default to 1 if blank.
     const raw = (newItem.qty ?? "").toString().trim();
-    const qtyParsed = raw === "" ? 1 : Number(raw);
-    const qtyNum = Number.isFinite(qtyParsed) && qtyParsed >= 0 ? qtyParsed : 1;
+    const qtyParsed = newItem.toBuy ? 0 : raw === "" ? 1 : Number(raw);
+    const qtyNum = Number.isFinite(qtyParsed) && qtyParsed >= 0 ? qtyParsed : newItem.toBuy ? 0 : 1;
 
     const unitToSend = normalizeUnit(newItem.unit);
 
@@ -181,10 +191,16 @@ const MealPlannerApp: React.FC = () => {
           name: created.name,
           category: newItem.category,
           unit: unitToSend,
-          selected: (created.qty ?? 0) > 0, // true => available (no strike-through)
+          selected: (created.qty ?? 0) > 0, // true => available
         },
       ]);
-      setNewItem({ name: "", qty: "", category: "Fresh Produce", unit: "kg" });
+
+      // If they added a To buy item, switch to the To-buy view so they see it immediately
+      if (newItem.toBuy) {
+        setShowToBuy(true);
+      }
+
+      setNewItem({ name: "", qty: "", category: "Fresh Produce", unit: "kg", toBuy: false });
       setShowAddModal(false);
     } catch (err: any) {
       console.error("Add pantry item failed:", err?.response?.data || err);
@@ -214,7 +230,7 @@ const MealPlannerApp: React.FC = () => {
     }
   };
 
-  // ---------- Today’s planned meals (just names for Lunch/Dinner cards in your UI) ----------
+  // ---------- Today’s planned meals (names for Lunch/Dinner cards) ----------
   const today = todayISO();
   const todayMeals = useMemo(() => {
     const out: Record<"breakfast" | "lunch" | "dinner" | "snack", Meal> = {
@@ -375,22 +391,31 @@ const MealPlannerApp: React.FC = () => {
                 Add Items
               </button>
               <button
-                className="bg-orange-400 hover:bg-orange-500 text-white font-medium py-2 px-4 rounded-xl transition-colors"
-                onClick={() => setActiveCategory("All")}
+                className={`${
+                  showToBuy ? "bg-blue-500 text-white" : "bg-orange-400 hover:bg-orange-500 text-white"
+                } font-medium py-2 px-4 rounded-xl transition-colors`}
+                onClick={() => setShowToBuy((v) => !v)} // ✅ dedicated To-buy toggle
+                title="View items to buy"
               >
-                To buy
+                {showToBuy ? "Viewing: To buy" : "To buy"}
               </button>
             </div>
 
-            {/* Category Filters */}
+            {/* Category Filters (disabled while in To-buy view) */}
             <div className="flex flex-wrap gap-2 mb-6">
               {categories.map((category) => (
                 <button
                   key={category}
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => {
+                    setShowToBuy(false); // leaving To-buy view
+                    setActiveCategory(category);
+                  }}
                   className={`px-4 py-2 rounded-xl font-medium transition-colors ${
-                    activeCategory === category ? "bg-blue-500 text-white" : "bg-blue-200 text-blue-800 hover:bg-blue-300"
-                  }`}
+                    !showToBuy && activeCategory === category
+                      ? "bg-blue-500 text-white"
+                      : "bg-blue-200 text-blue-800 hover:bg-blue-300"
+                  } ${showToBuy ? "opacity-60 cursor-not-allowed" : ""}`}
+                  disabled={showToBuy}
                 >
                   {category}
                 </button>
@@ -400,18 +425,29 @@ const MealPlannerApp: React.FC = () => {
             {/* Grocery Items */}
             <div className="grid grid-cols-2 gap-3">
               {filteredItems.map((item) => (
-                <div key={item.id} className="flex items-center space-x-3 p-2 hover:bg-white rounded-lg transition-colors">
+                <div
+                  key={item.id}
+                  // click anywhere on the row to toggle (and thus move between views)
+                  onClick={() => toggleItem(item.id)}
+                  className="flex items-center space-x-3 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer select-none"
+                >
                   <button
-                    onClick={() => toggleItem(item.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // avoid double toggle when clicking the circle
+                      toggleItem(item.id);
+                    }}
                     className={`w-5 h-5 rounded-full border-2 transition-colors ${
                       item.selected ? "bg-blue border-blue-500" : "border-blue-300 hover:border-blue-400"
                     }`}
                     title={item.selected ? "Have it" : "Finished / Out"}
+                    aria-pressed={!item.selected}
                   >
                     {item.selected && <div className="w-full h-full rounded-full bg-blue-500"></div>}
                   </button>
-                  {/* ✅ selected=true (available) => normal text; false => strike-through */}
-                  <span className={`text-sm ${item.selected ? "text-blue" : "text-blue-300 line-through"}`}>{item.name}</span>
+                  {/* selected=true (available) => normal; false => strike-through (only visible in To-buy view) */}
+                  <span className={`text-sm ${item.selected ? "text-blue" : "text-blue-300 line-through"}`}>
+                    {item.name}
+                  </span>
                 </div>
               ))}
             </div>
@@ -446,7 +482,8 @@ const MealPlannerApp: React.FC = () => {
                   value={newItem.qty}
                   onChange={(e) => setNewItem((prev) => ({ ...prev, qty: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter quantity (blank = 1)"
+                  placeholder={`Enter quantity${newItem.toBuy ? " (ignored when 'To buy' is checked)" : " (blank = 1)"}`}
+                  disabled={newItem.toBuy}
                 />
               </div>
 
@@ -480,6 +517,19 @@ const MealPlannerApp: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Add directly to "To buy" */}
+              <div className="flex items-center gap-2">
+                <input
+                  id="toBuy"
+                  type="checkbox"
+                  checked={newItem.toBuy}
+                  onChange={(e) => setNewItem((prev) => ({ ...prev, toBuy: e.target.checked }))}
+                />
+                <label htmlFor="toBuy" className="text-sm text-gray-700">
+                  Add to <span className="font-medium">To buy</span> (mark as out of stock)
+                </label>
               </div>
             </div>
 
