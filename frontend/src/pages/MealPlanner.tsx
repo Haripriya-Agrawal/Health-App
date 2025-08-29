@@ -45,6 +45,14 @@ const mondayOf = (iso: string) => {
   return d.toISOString().slice(0, 10);
 };
 
+const ALLOWED_UNITS = ["kg", "g", "l", "ml", "pcs", "dozen", "packet"] as const;
+type AllowedUnit = (typeof ALLOWED_UNITS)[number];
+
+const normalizeUnit = (u: string): AllowedUnit => {
+  const low = (u || "").toLowerCase();
+  return (ALLOWED_UNITS as readonly string[]).includes(low) ? (low as AllowedUnit) : "pcs";
+};
+
 const MealPlannerApp: React.FC = () => {
   // ---- pantry / grocery UI state
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
@@ -82,7 +90,7 @@ const MealPlannerApp: React.FC = () => {
   >([]);
   const [macros, setMacros] = useState<MacroInfo>({ calories: 0, carbs: 0, protein: 0, fibre: 0 });
 
-  const units = ["kg", "g", "l", "ml", "pcs", "dozen", "packet"];
+  const units = ALLOWED_UNITS.slice();
   const categories = ["Fresh Produce", "Dairy", "Grains & Pulses", "Drinks & Snacks", "Misc", "All"];
 
   // ---------- Load pantry + templates + plan (for the current week) ----------
@@ -130,7 +138,7 @@ const MealPlannerApp: React.FC = () => {
 
     try {
       const item = groceryItems.find((i) => i.id === id);
-      const goingToSelected = item ? !item.selected : true;
+      const goingToSelected = item ? !item.selected : true; // true = will be "available"
       await pantryService.updateQty(id, goingToSelected ? 1 : 0);
     } catch (e) {
       console.error("Failed to update pantry qty", e);
@@ -139,40 +147,56 @@ const MealPlannerApp: React.FC = () => {
 
   // ---------- Add new pantry item (modal) ----------
   const handleAddItem = async () => {
-    if (!newItem.name.trim()) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You're not signed in. Please sign in again and try adding the item.");
+      return;
+    }
+
+    const name = newItem.name.trim();
+    if (!name) {
+      alert("Please enter an item name.");
+      return;
+    }
+
+    // Default to 1 so the new item appears available (not crossed out)
+    const raw = (newItem.qty ?? "").toString().trim();
+    const qtyParsed = raw === "" ? 1 : Number(raw);
+    const qtyNum = Number.isFinite(qtyParsed) && qtyParsed >= 0 ? qtyParsed : 1;
+
+    const unitToSend = normalizeUnit(newItem.unit);
+
     try {
-      const qtyNum = Number(newItem.qty || "0");
-
-      // guard: keep unit list in sync with backend
-      const allowed = new Set(["kg", "g", "l", "ml", "pcs", "dozen", "packet"]);
-      const unitToSend = allowed.has(newItem.unit) ? newItem.unit : "pcs";
-
       const created = await pantryService.upsert({
-        name: newItem.name,
+        name,
         unit: unitToSend,
-        qty: isNaN(qtyNum) ? 0 : qtyNum,
+        qty: qtyNum,
         tags: [newItem.category],
       });
 
       setGroceryItems((prev) => [
         ...prev,
         {
-          id: String(created._id), // ensure string
+          id: String(created._id),
           name: created.name,
           category: newItem.category,
           unit: unitToSend,
-          selected: (created.qty ?? 0) > 0,
+          selected: (created.qty ?? 0) > 0, // true => available (no strike-through)
         },
       ]);
       setNewItem({ name: "", qty: "", category: "Fresh Produce", unit: "kg" });
       setShowAddModal(false);
-    } catch (e: any) {
-      console.error("Add pantry item failed:", e?.response?.data || e);
-      alert(
-        e?.response?.data?.message
-          ? `Couldn't add item: ${e.response.data.message}`
-          : "Couldn't add item. Please try again."
-      );
+    } catch (err: any) {
+      console.error("Add pantry item failed:", err?.response?.data || err);
+      const status = err?.response?.status;
+      const msg =
+        err?.response?.data?.message ||
+        (status === 401
+          ? "Unauthorized. Please sign in again."
+          : status === 404
+          ? "API route not found. Make sure /api/pantry is mounted."
+          : "Couldn't add item. Please try again.");
+      alert(`Couldn't add item${status ? ` (HTTP ${status})` : ""}: ${msg}`);
     }
   };
 
@@ -184,6 +208,7 @@ const MealPlannerApp: React.FC = () => {
       setPlan(mp);
     } catch (e) {
       console.error("Generate plan failed:", e);
+      alert("Couldn't generate plan. Make sure the backend meal plan routes are mounted and you're signed in.");
     } finally {
       setLoading(false);
     }
@@ -256,7 +281,7 @@ const MealPlannerApp: React.FC = () => {
     );
   }
 
-  // ---------- Your exact UI (unchanged) ----------
+  // ---------- Your exact UI (unchanged layout/colors) ----------
   return (
     <div className="min-h-screen bg-lightblue  p-6">
       <Navbar />
@@ -385,7 +410,8 @@ const MealPlannerApp: React.FC = () => {
                   >
                     {item.selected && <div className="w-full h-full rounded-full bg-blue-500"></div>}
                   </button>
-                  <span className={`text-sm ${item.selected ? "text-blue-300 line-through" : "text-blue"}`}>{item.name}</span>
+                  {/* ✅ selected=true (available) => normal text; false => strike-through */}
+                  <span className={`text-sm ${item.selected ? "text-blue" : "text-blue-300 line-through"}`}>{item.name}</span>
                 </div>
               ))}
             </div>
@@ -420,7 +446,7 @@ const MealPlannerApp: React.FC = () => {
                   value={newItem.qty}
                   onChange={(e) => setNewItem((prev) => ({ ...prev, qty: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter quantity"
+                  placeholder="Enter quantity (blank = 1)"
                 />
               </div>
 
