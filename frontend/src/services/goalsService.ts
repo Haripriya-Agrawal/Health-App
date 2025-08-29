@@ -1,37 +1,55 @@
 import axios from "axios";
-import { API_BASE_URL } from "./apiConfig";
 
-// Types are optional but helpful for IDEs.
-// Adjust if your backend returns different shapes.
-export type Goals = {
-  stepsTarget?: number;
-  workoutType?: string;
-  workoutDuration?: number; // minutes
-  macros?: {
-    calories?: number;
-    carbs?: number;
-    protein?: number;
-    fat?: number;
-    fiber?: number;
-  };
-  streak?: number;
-  currentWeight?: number;
-  goalWeight?: number;
+// Mirrors your other services (e.g., dailyLogService)
+// const API_BASE_URL =
+//   (import.meta as any)?.env?.VITE_API_BASE_URL || "http://localhost:5001/api";
+
+  import { API_BASE_URL } from "./apiConfig";
+
+// Types (kept minimal but aligned with the page)
+export type DualRange = { min?: number; max?: number };
+export type MacroRange = DualRange;
+
+export type WorkoutGoal = {
+  type?: "walking" | "running" | "cycling" | "gym" | string;
+  mode?: "time" | "calories";
+  target?: number; // minutes if mode=time, kcal if mode=calories
 };
 
-export type UpdateGoalsPayload = {
-  // Keep keys optional so you can send partial updates
+export type NonWeightGoals = {
+  sleepHours?: DualRange;
+  waterLiters?: DualRange;
+};
+
+export type StreakGoals = {
+  stepsDaysPerWeekMin?: number;
+  caloriesWithinGoalDaysPerWeekMin?: number;
+};
+
+export type Goals = {
+  steps?: DualRange;
+  workout?: WorkoutGoal;
+  macros?: {
+    calories?: MacroRange;
+    protein?: MacroRange;
+    carbs?: MacroRange;
+    fat?: MacroRange;
+    fiber?: MacroRange;
+  };
+  currentWeight?: number;
+  goalWeight?: number;
+  targetDate?: string | null;
+  nonWeight?: NonWeightGoals;
+  streaks?: StreakGoals;
+
+  // legacy (ignore on UI, kept for compatibility)
   stepsTarget?: number;
   workoutType?: string;
   workoutDuration?: number;
-  // frontend often uses "fibre" — map it to "fiber" on backend if needed there
-  caloriesTarget?: number;
-  carbsTarget?: number;
-  proteinTarget?: number;
-  fibreTarget?: number;
-  fatTarget?: number;
-  weightTarget?: number;
+  streak?: number;
 };
+
+export type UpdateGoalsPayload = Partial<Goals>;
 
 const authHeader = () => {
   const token = localStorage.getItem("token");

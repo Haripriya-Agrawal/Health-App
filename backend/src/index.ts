@@ -6,6 +6,8 @@ import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth.routes";
 import dailyLogRoutes from "./routes/dailyLog.routes";
 import goalsRoutes from "./routes/goals.routes";
+import pantryRoutes from "./routes/pantry.routes"
+import mealsRoutes from "./routes/meals.routes"
 
 dotenv.config();
 
@@ -16,6 +18,12 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/daily-log", dailyLogRoutes);
 app.use("/api/goals", goalsRoutes);
+
+app.use("/api/meals", mealsRoutes);
+app.use("/api/pantry", pantryRoutes);
+app.use("/api/pantries", pantryRoutes); // alias
+
+
 
 const PORT = process.env.PORT || 5001;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/healthapp";

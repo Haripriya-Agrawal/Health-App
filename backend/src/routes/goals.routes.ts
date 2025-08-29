@@ -1,4 +1,3 @@
-// backend/routes/goals.routes.ts
 import { Router } from "express";
 import { authMiddleware, AuthedRequest } from "../middleware/authMiddleware";
 import { User } from "../models/User";
@@ -12,14 +11,22 @@ router.get("/", async (req: AuthedRequest, res) => {
     const user = await User.findById(req.userId).lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Build response matching frontend Goals type
     const goals = {
+      steps: user.steps,                                  // {min,max}
+      workout: user.workout,                              // {type, mode, target}
+      macros: user.macros,                                // {calories:{min,max}, ...}
+      currentWeight: user.currentWeight,
+      goalWeight: user.goalWeight,
+      targetDate: user.targetDate ?? null,
+      nonWeight: user.nonWeight,                          // {sleepHours:{min,max}, waterLiters:{min,max}}
+      streaks: user.streaks,                              // {stepsDaysPerWeekMin, caloriesWithinGoalDaysPerWeekMin}
+
+      // legacy (optional): keep for old pages that still read them
       stepsTarget: user.stepsTarget,
       workoutType: user.workoutType,
       workoutDuration: user.workoutDuration,
-      macros: user.macros,
       streak: user.streak,
-      currentWeight: user.currentWeight,
-      goalWeight: user.goalWeight,
     };
 
     res.json(goals);
@@ -33,43 +40,44 @@ router.get("/", async (req: AuthedRequest, res) => {
 router.put("/", async (req: AuthedRequest, res) => {
   try {
     const {
-      stepsTarget,
-      workoutType,
-      workoutDuration,
-      caloriesTarget,
-      carbsTarget,
-      proteinTarget,
-      fibreTarget,
-      fatTarget,
-      weightTarget,
-    } = req.body;
+      steps,
+      workout,
+      macros,
+      currentWeight,
+      goalWeight,
+      targetDate,
+      nonWeight,
+      streaks,
+    } = req.body || {};
 
     const update: any = {};
-    if (typeof stepsTarget === "number") update.stepsTarget = stepsTarget;
-    if (typeof workoutType === "string") update.workoutType = workoutType;
-    if (typeof workoutDuration === "number") update.workoutDuration = workoutDuration;
-    if (typeof weightTarget === "number") update.goalWeight = weightTarget;
 
-    // macros target mapping; note: "fibre" (frontend) -> "fiber" (backend)
-    const macrosUpdate: any = {};
-    if (typeof caloriesTarget === "number") macrosUpdate.calories = caloriesTarget;
-    if (typeof carbsTarget === "number") macrosUpdate.carbs = carbsTarget;
-    if (typeof proteinTarget === "number") macrosUpdate.protein = proteinTarget;
-    if (typeof fibreTarget === "number") macrosUpdate.fiber = fibreTarget;
-    if (typeof fatTarget === "number") macrosUpdate.fat = fatTarget;
-    if (Object.keys(macrosUpdate).length) update.macros = macrosUpdate;
+    if (steps && typeof steps === "object") update.steps = steps;
+    if (workout && typeof workout === "object") update.workout = workout;
+    if (macros && typeof macros === "object") update.macros = macros;
+    if (typeof currentWeight === "number") update.currentWeight = currentWeight;
+    if (typeof goalWeight === "number") update.goalWeight = goalWeight;
+    if (targetDate === null || typeof targetDate === "string") update.targetDate = targetDate;
+    if (nonWeight && typeof nonWeight === "object") update.nonWeight = nonWeight;
+    if (streaks && typeof streaks === "object") update.streaks = streaks;
 
     const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { new: true });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
+      steps: user.steps,
+      workout: user.workout,
+      macros: user.macros,
+      currentWeight: user.currentWeight,
+      goalWeight: user.goalWeight,
+      targetDate: user.targetDate ?? null,
+      nonWeight: user.nonWeight,
+      streaks: user.streaks,
+
       stepsTarget: user.stepsTarget,
       workoutType: user.workoutType,
       workoutDuration: user.workoutDuration,
-      macros: user.macros,
       streak: user.streak,
-      currentWeight: user.currentWeight,
-      goalWeight: user.goalWeight,
     });
   } catch (err) {
     console.error("Update goals error:", err);
