@@ -1,6 +1,5 @@
 import axios from "axios";
 import { API_BASE_URL } from "./apiConfig";
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api";
 
 export type PlannedMeal = {
   date: string; // YYYY-MM-DD
@@ -32,16 +31,29 @@ export const mealPlanService = {
     const res = await axios.get(`${API_BASE_URL}/meal-plans/${weekStart}`, { headers: auth() });
     return res.data;
   },
+
   async generate(weekStart: string): Promise<MealPlan> {
-    const res = await axios.post(`${API_BASE_URL}/meal-plans/generate`, { weekStart }, { headers: auth() });
+    const res = await axios.post(
+      `${API_BASE_URL}/meal-plans/generate`,
+      { weekStart },
+      { headers: { "Content-Type": "application/json", ...auth() } }
+    );
     return res.data;
   },
+
   async update(plan: Partial<MealPlan> & { _id: string }): Promise<MealPlan> {
-    const res = await axios.put(`${API_BASE_URL}/meal-plans/${plan._id}`, plan, { headers: auth() });
+    const res = await axios.put(`${API_BASE_URL}/meal-plans/${plan._id}`, plan, {
+      headers: { "Content-Type": "application/json", ...auth() },
+    });
     return res.data;
   },
+
   async togglePurchased(weekStart: string, name: string, purchased: boolean): Promise<MealPlan> {
-    const res = await axios.put(`${API_BASE_URL}/meal-plans/${weekStart}/grocery`, { name, purchased }, { headers: auth() });
+    const res = await axios.put(
+      `${API_BASE_URL}/meal-plans/${weekStart}/grocery`,
+      { name, purchased },
+      { headers: { "Content-Type": "application/json", ...auth() } }
+    );
     return res.data;
   },
 };

@@ -3,13 +3,17 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db";
+
+dotenv.config();
 import authRoutes from "./routes/auth.routes";
 import dailyLogRoutes from "./routes/dailyLog.routes";
 import goalsRoutes from "./routes/goals.routes";
 import pantryRoutes from "./routes/pantry.routes"
 import mealsRoutes from "./routes/meals.routes"
+import aiRouter from "./routes/ai.routes"
+import nutritionixRouter from "./routes/nutritionix.routes"
 
-dotenv.config();
+
 
 const app = express();
 app.use(cors());
@@ -22,6 +26,8 @@ app.use("/api/goals", goalsRoutes);
 app.use("/api/meals", mealsRoutes);
 app.use("/api/pantry", pantryRoutes);
 app.use("/api/pantries", pantryRoutes); // alias
+app.use("/api/ai", aiRouter);
+app.use("/api/nutritionix", nutritionixRouter);
 
 
 
