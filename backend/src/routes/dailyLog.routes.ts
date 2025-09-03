@@ -1,17 +1,22 @@
-// backend/routes/dailyLog.routes.ts
-import { Router } from "express";
+import { Router, Request } from "express";
 import axios from "axios";
 import dayjs from "dayjs";
-import { authMiddleware, AuthedRequest } from "../middleware/authMiddleware";
+import { authMiddleware } from "../middleware/authMiddleware";
 import { DailyLog } from "../models/DailyLog";
 
 const router = Router();
 router.use(authMiddleware);
 
+interface AuthRequest extends Request {
+  user?: { id: string };
+}
+
 // GET /api/daily-log
-router.get("/", async (req: AuthedRequest, res) => {
+router.get("/", async (req: AuthRequest, res) => {
   try {
-    const logs = await DailyLog.find({ user: req.userId }).sort({ date: 1 }).lean();
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
+    const logs = await DailyLog.find({ user: req.user.id }).sort({ date: 1 }).lean();
     res.json(logs);
   } catch (err) {
     console.error("Fetch logs error:", err);
@@ -20,13 +25,15 @@ router.get("/", async (req: AuthedRequest, res) => {
 });
 
 // POST /api/daily-log/weight
-router.post("/weight", async (req: AuthedRequest, res) => {
+router.post("/weight", async (req: AuthRequest, res) => {
   try {
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
     const { weight, measuredAt } = req.body as { weight: number; measuredAt: string };
     const date = dayjs().format("YYYY-MM-DD");
 
     const updated = await DailyLog.findOneAndUpdate(
-      { user: req.userId, date },
+      { user: req.user.id, date },
       { $set: { weight: { value: weight, measuredAt } } },
       { upsert: true, new: true }
     );
@@ -39,8 +46,10 @@ router.post("/weight", async (req: AuthedRequest, res) => {
 });
 
 // POST /api/daily-log/activity
-router.post("/activity", async (req: AuthedRequest, res) => {
+router.post("/activity", async (req: AuthRequest, res) => {
   try {
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
     const { type, steps, duration } = req.body as {
       type: string;
       steps?: number;
@@ -49,7 +58,7 @@ router.post("/activity", async (req: AuthedRequest, res) => {
     const date = dayjs().format("YYYY-MM-DD");
 
     const updated = await DailyLog.findOneAndUpdate(
-      { user: req.userId, date },
+      { user: req.user.id, date },
       { $set: { activity: { type, steps: steps || 0, duration: duration || 0 } } },
       { upsert: true, new: true }
     );
@@ -61,19 +70,11 @@ router.post("/activity", async (req: AuthedRequest, res) => {
   }
 });
 
-/**
- * POST /api/daily-log/calculate-macros
- * Restored to your original working logic:
- * - Uses Nutritionix "natural language" endpoint to parse each provided meal string.
- * - Sums nf_calories, nf_protein, nf_total_carbohydrate, nf_total_fat, nf_dietary_fiber.
- * - Updates ONLY the macros for today's DailyLog (no meal merging/wiping).
- * 
- * Required env:
- *   NUTRITIONIX_APP_ID
- *   NUTRITIONIX_APP_KEY
- */
-router.post("/calculate-macros", async (req: AuthedRequest, res) => {
+// POST /api/daily-log/calculate-macros
+router.post("/calculate-macros", async (req: AuthRequest, res) => {
   try {
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
     const { meals } = (req.body || {}) as {
       meals?: { breakfast?: string; lunch?: string; snacks?: string; dinner?: string };
     };
@@ -90,16 +91,8 @@ router.post("/calculate-macros", async (req: AuthedRequest, res) => {
 
     const fields = ["breakfast", "lunch", "snacks", "dinner"] as const;
 
-    // Accumulator
-    const total = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-    };
+    const total = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
 
-    // For each non-empty meal string, call Nutritionix
     for (const meal of fields) {
       const text = (meals as any)[meal];
       if (!text || typeof text !== "string" || text.trim().length === 0) continue;
@@ -127,7 +120,6 @@ router.post("/calculate-macros", async (req: AuthedRequest, res) => {
       }
     }
 
-    // Optional: round to 1 decimal to keep UI neat
     const round1 = (n: number) => Math.round(n * 10) / 10;
     total.calories = round1(total.calories);
     total.protein = round1(total.protein);
@@ -135,10 +127,9 @@ router.post("/calculate-macros", async (req: AuthedRequest, res) => {
     total.fat = round1(total.fat);
     total.fiber = round1(total.fiber);
 
-    // Save macros for TODAY (do not overwrite meals here — match original behavior)
     const date = dayjs().format("YYYY-MM-DD");
     const updated = await DailyLog.findOneAndUpdate(
-      { user: req.userId, date },
+      { user: req.user.id, date },
       { $set: { macros: total } },
       { upsert: true, new: true }
     );
@@ -147,6 +138,41 @@ router.post("/calculate-macros", async (req: AuthedRequest, res) => {
   } catch (err) {
     console.error("❌ Macro calc error:", err);
     res.status(500).json({ message: "Macro calculation failed" });
+  }
+});
+
+router.post("/", async (req: AuthRequest, res) => {
+  try {
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
+    const { date, mealType, name, macros } = req.body as {
+      date: string;
+      mealType: "breakfast" | "lunch" | "dinner" | "snack";
+      name: string;
+      macros: { calories: number; protein: number; carbs: number; fibre: number };
+    };
+
+    if (!date || !mealType || !name) {
+      return res.status(400).json({ message: "date, mealType, and name are required" });
+    }
+
+    // Build meal entry
+    const mealEntry = {
+      name,
+      macros,
+    };
+
+    // Upsert into DailyLog
+    const updated = await DailyLog.findOneAndUpdate(
+      { user: req.user.id, date },
+      { $set: { [`meals.${mealType}`]: mealEntry } }, // ✅ store under meals.{mealType}
+      { upsert: true, new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Log meal error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

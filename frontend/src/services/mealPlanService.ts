@@ -1,3 +1,4 @@
+// frontend/services/mealPlanService.ts
 import axios from "axios";
 import { API_BASE_URL } from "./apiConfig";
 
@@ -6,6 +7,7 @@ export type PlannedMeal = {
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   templateId?: string | null;
   name: string;
+  macros?: { calories: number; carbs: number; protein: number; fibre: number };
 };
 
 export type MealPlan = {
@@ -27,35 +29,29 @@ const auth = () => {
 };
 
 export const mealPlanService = {
+  // Fetch a meal plan for a given week
   async get(weekStart: string): Promise<MealPlan | null> {
-    const res = await axios.get(`${API_BASE_URL}/meal-plans/${weekStart}`, { headers: auth() });
-    return res.data;
-  },
-
-  async generate(weekStart: string): Promise<MealPlan> {
-    const res = await axios.post(
-      `${API_BASE_URL}/meal-plans/generate`,
-      { weekStart },
-      { headers: { "Content-Type": "application/json", ...auth() } }
-    );
-    return res.data;
-  },
-
-  async update(plan: Partial<MealPlan> & { _id: string }): Promise<MealPlan> {
-    const res = await axios.put(`${API_BASE_URL}/meal-plans/${plan._id}`, plan, {
-      headers: { "Content-Type": "application/json", ...auth() },
+    const res = await axios.get(`${API_BASE_URL}/meal-plans/${weekStart}`, {
+      headers: auth(),
     });
     return res.data;
   },
 
-  async togglePurchased(weekStart: string, name: string, purchased: boolean): Promise<MealPlan> {
-    const res = await axios.put(
-      `${API_BASE_URL}/meal-plans/${weekStart}/grocery`,
-      { name, purchased },
-      { headers: { "Content-Type": "application/json", ...auth() } }
+  // Generate a fresh plan (server decides content)
+  async generate(weekStart: string): Promise<MealPlan> {
+    const res = await axios.post(
+      `${API_BASE_URL}/meal-plans/generate`,
+      { weekStart },
+      { headers: { ...auth(), "Content-Type": "application/json" } }
     );
     return res.data;
   },
-};
 
-export default mealPlanService;
+  // Save or update an existing plan
+  async update(plan: MealPlan): Promise<MealPlan> {
+    const res = await axios.post(`${API_BASE_URL}/meal-plans`, plan, {
+      headers: { ...auth(), "Content-Type": "application/json" },
+    });
+    return res.data;
+  },
+};

@@ -1,28 +1,33 @@
-import { Router } from "express";
-import { authMiddleware, AuthedRequest } from "../middleware/authMiddleware";
+import { Router, Request } from "express";
+import { authMiddleware } from "../middleware/authMiddleware";
 import { User } from "../models/User";
 
 const router = Router();
 router.use(authMiddleware);
 
+interface AuthRequest extends Request {
+  user?: { id: string };
+}
+
 // GET /api/goals
-router.get("/", async (req: AuthedRequest, res) => {
+router.get("/", async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.userId).lean();
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await User.findById(req.user.id).lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Build response matching frontend Goals type
     const goals = {
-      steps: user.steps,                                  // {min,max}
-      workout: user.workout,                              // {type, mode, target}
-      macros: user.macros,                                // {calories:{min,max}, ...}
+      steps: user.steps,
+      workout: user.workout,
+      macros: user.macros,
       currentWeight: user.currentWeight,
       goalWeight: user.goalWeight,
       targetDate: user.targetDate ?? null,
-      nonWeight: user.nonWeight,                          // {sleepHours:{min,max}, waterLiters:{min,max}}
-      streaks: user.streaks,                              // {stepsDaysPerWeekMin, caloriesWithinGoalDaysPerWeekMin}
+      nonWeight: user.nonWeight,
+      streaks: user.streaks,
 
-      // legacy (optional): keep for old pages that still read them
+      // legacy
       stepsTarget: user.stepsTarget,
       workoutType: user.workoutType,
       workoutDuration: user.workoutDuration,
@@ -37,8 +42,10 @@ router.get("/", async (req: AuthedRequest, res) => {
 });
 
 // PUT /api/goals
-router.put("/", async (req: AuthedRequest, res) => {
+router.put("/", async (req: AuthRequest, res) => {
   try {
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
     const {
       steps,
       workout,
@@ -61,7 +68,7 @@ router.put("/", async (req: AuthedRequest, res) => {
     if (nonWeight && typeof nonWeight === "object") update.nonWeight = nonWeight;
     if (streaks && typeof streaks === "object") update.streaks = streaks;
 
-    const user = await User.findByIdAndUpdate(req.userId, { $set: update }, { new: true });
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: update }, { new: true });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({

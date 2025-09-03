@@ -2,9 +2,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+dotenv.config();
 import { connectDB } from "./config/db";
 
-dotenv.config();
 import authRoutes from "./routes/auth.routes";
 import dailyLogRoutes from "./routes/dailyLog.routes";
 import goalsRoutes from "./routes/goals.routes";
@@ -12,6 +12,7 @@ import pantryRoutes from "./routes/pantry.routes"
 import mealsRoutes from "./routes/meals.routes"
 import aiRouter from "./routes/ai.routes"
 import nutritionixRouter from "./routes/nutritionix.routes"
+import mealPlanRoutes from "./routes/mealPlan.routes";
 
 
 
@@ -22,7 +23,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/daily-log", dailyLogRoutes);
 app.use("/api/goals", goalsRoutes);
-
+app.use("/api/meal-plans",mealPlanRoutes)
 app.use("/api/meals", mealsRoutes);
 app.use("/api/pantry", pantryRoutes);
 app.use("/api/pantries", pantryRoutes); // alias

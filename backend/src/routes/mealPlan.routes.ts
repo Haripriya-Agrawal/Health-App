@@ -1,17 +1,21 @@
-import { Router } from "express";
-import { authMiddleware } from "../middleware/authMiddleware";
+// backend/routes/mealPlan.routes.ts
+import { Router, Request } from "express";
+import { authMiddleware, AuthedRequest } from "../middleware/authMiddleware";
 import MealPlan from "../models/MealPlan";
-import { startOfISOWeek } from "date-fns";
-
-
 
 const router = Router();
 router.use(authMiddleware);
 
+interface AuthRequest extends Request {
+  user?: { id: string };
+}
+
 // GET meal plan for a week
-router.get("/:weekStart", async (req, res) => {
+router.get("/:weekStart", async (req: AuthRequest, res) => {
   try {
     const { weekStart } = req.params;
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
     const plan = await MealPlan.findOne({ weekStart, user: req.user.id });
     if (!plan) return res.json(null);
     res.json(plan);
@@ -21,46 +25,38 @@ router.get("/:weekStart", async (req, res) => {
 });
 
 // POST generate a new plan
-router.post("/generate", async (req, res) => {
+router.post("/generate", async (req: AuthRequest, res) => {
   try {
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+
     const { weekStart } = req.body;
-    let plan = await MealPlan.findOne({ weekStart, user: req.user.id });
-    if (!plan) {
-      plan = new MealPlan({ weekStart, user: req.user.id, meals: [], grocery: [] });
-      await plan.save();
-    }
+    let plan = new MealPlan({
+      weekStart,
+      user: req.user.id,
+      meals: [],
+      grocery: [],
+    });
+    await plan.save();
     res.json(plan);
   } catch (err) {
     res.status(500).json({ message: "Failed to generate plan" });
   }
 });
 
-// PUT update entire plan
-router.put("/:id", async (req, res) => {
+// POST save or update a meal plan
+router.post("/", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
-    const updated = await MealPlan.findByIdAndUpdate(id, req.body, { new: true });
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to update plan" });
-  }
-});
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
 
-// PUT toggle grocery purchased
-router.put("/:weekStart/grocery", async (req, res) => {
-  try {
-    const { weekStart } = req.params;
-    const { name, purchased } = req.body;
-    const plan = await MealPlan.findOne({ weekStart, user: req.user.id });
-    if (!plan) return res.status(404).json({ message: "Plan not found" });
-
-    const g = plan.grocery.find((x: any) => x.name === name);
-    if (g) g.purchased = purchased;
-
-    await plan.save();
+    const { weekStart, meals, grocery } = req.body;
+    let plan = await MealPlan.findOneAndUpdate(
+      { weekStart, user: req.user.id },
+      { meals, grocery },
+      { new: true, upsert: true }
+    );
     res.json(plan);
   } catch (err) {
-    res.status(500).json({ message: "Failed to toggle grocery item" });
+    res.status(500).json({ message: "Failed to save meal plan" });
   }
 });
 

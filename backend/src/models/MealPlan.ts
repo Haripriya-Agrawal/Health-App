@@ -1,10 +1,16 @@
-import mongoose, { Schema, Document,Types } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 interface PlannedMeal {
   date: string;
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
-  templateId?: string | null;
+  templateId?: Types.ObjectId | null;
   name: string;
+  macros?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fibre: number;
+  };
 }
 
 interface GroceryItem {
@@ -16,7 +22,7 @@ interface GroceryItem {
 }
 
 export interface IMealPlan extends Document {
-  user: string;
+  user: Types.ObjectId;
   weekStart: string;
   meals: PlannedMeal[];
   grocery: GroceryItem[];
@@ -27,19 +33,29 @@ const MealPlanSchema = new Schema<IMealPlan>({
   weekStart: { type: String, required: true },
   meals: [
     {
-      date: String,
-      mealType: String,
-      templateId: { type: Schema.Types.ObjectId, ref: "MealTemplate" },
-      name: String,
+      date: { type: String, required: true },
+      mealType: {
+        type: String,
+        enum: ["breakfast", "lunch", "dinner", "snack"],
+        required: true,
+      },
+      templateId: { type: Schema.Types.ObjectId, ref: "MealTemplate", default: null },
+      name: { type: String, required: true },
+      macros: {
+        calories: { type: Number, default: 0 },
+        protein: { type: Number, default: 0 },
+        carbs: { type: Number, default: 0 },
+        fibre: { type: Number, default: 0 },
+      },
     },
   ],
   grocery: [
     {
-      name: String,
-      unit: String,
-      qtyNeeded: Number,
-      have: Number,
-      purchased: Boolean,
+      name: { type: String, required: true },
+      unit: { type: String, required: true },
+      qtyNeeded: { type: Number, required: true },
+      have: { type: Number, required: true },
+      purchased: { type: Boolean, default: false },
     },
   ],
 });
