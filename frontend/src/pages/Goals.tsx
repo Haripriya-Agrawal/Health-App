@@ -20,24 +20,37 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/**
- * Visual/styling notes:
- * - Page bg: "bg-lightblue"
- * - Cards: bg-[#FEEFEF], rounded-2xl, subtle shadow
- * - Text colors: brand blues/orange
- * - Buttons: gradient from #B1D5E5 to #F48C74, rounded-full
- */
+/** ------------------------------------------------------------
+ * Color tokens (high-contrast yellow/purple for visibility)
+ * ------------------------------------------------------------ */
+const COLORS = {
+  // Primary purple + accents
+  primary: "#7C3AED", // vivid purple (lines, bars)
+  primarySoft: "#A78BFA", // soft purple
+  // Yellow accents
+  accent: "#F59E0B", // amber (targets, max lines)
+  accentSoft: "#FDE68A", // pastel band / dots
+  // Text & grid
+  text: "#3B0764",
+  textMuted: "#6B21A8",
+  grid: "#E9D5FF",
+  // Bands
+  bandPurple: "rgba(167, 139, 250, 0.22)",
+  bandPink: "rgba(251, 191, 210, 0.22)",
+};
 
-// ---------- Tiny UI primitives (match your vibe) ----------
+/** ------------------------------------------------------------
+ * Tiny UI primitives (match your vibe)
+ * ------------------------------------------------------------ */
 const PageHeader: React.FC<{ title: string; subtitle?: string; right?: React.ReactNode }> = ({
   title,
   subtitle,
   right,
 }) => (
-  <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+  <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 text-[#6B21A8]">
     <div>
-      <h1 className="text-xl md:text-2xl font-semibold text-[#067BC2]">{title}</h1>
-      {subtitle && <p className="text-sm md:text-base text-blue-700/80">{subtitle}</p>}
+      <h1 className="text-xl md:text-2xl font-semibold">{title}</h1>
+      {subtitle && <p className="text-sm md:text-base text-[#3B0764]/80">{subtitle}</p>}
     </div>
     {right}
   </div>
@@ -50,12 +63,17 @@ const Card: React.FC<{
   className?: string;
   children: React.ReactNode;
 }> = ({ title, subtitle, right, className = "", children }) => (
-  <section className={`bg-[#FEEFEF] rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow ${className}`}>
+  <section
+    className={`group [perspective:1200px] relative h-full flex flex-col rounded-[28px] p-6 bg-white/25 backdrop-blur-xl border border-white/60
+                 shadow-[0_8px_30px_rgba(0,0,0,0.08)] transform-gpu transition-all duration-300
+                 group-hover:-translate-y-2 group-hover:scale-[1.015] group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.18)]
+                 ${className}`}
+  >
     {(title || right) && (
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 text-[#6B21A8]">
         <div>
-          {title && <h2 className="text-[#007BFF] font-semibold text-base md:text-lg">{title}</h2>}
-          {subtitle && <div className="text-[11px] md:text-xs text-blue-500">{subtitle}</div>}
+          {title && <h2 className="font-semibold text-base md:text-lg">{title}</h2>}
+          {subtitle && <div className="text-[11px] md:text-xs text-[#3B0764]">{subtitle}</div>}
         </div>
         {right}
       </div>
@@ -73,21 +91,21 @@ const NumberInput: React.FC<{
   min?: number;
   max?: number;
 }> = ({ label, value, onChange, step = 1, suffix, min, max }) => (
-  <label className="flex items-center gap-2 bg-white border border-[#B1D5E5] rounded-2xl px-3 py-2">
-    <span className="text-blue-700 text-sm min-w-[110px]">{label}</span>
+  <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
+    <span className="text-sm min-w-[110px]">{label}</span>
     <input
       type="number"
       step={step}
       min={min !== undefined ? min : undefined}
       max={max !== undefined ? max : undefined}
-      className="flex-1 outline-none text-[#067BC2] bg-transparent"
+      className="flex-1 outline-none text-[#3B0764] bg-transparent"
       value={value ?? ""}
       onChange={(e) => {
         const raw = e.target.value;
         onChange(raw === "" ? undefined : Number(raw));
       }}
     />
-    {suffix && <span className="text-blue-700/70 text-xs">{suffix}</span>}
+    {suffix && <span className="text-gray-500/70 text-xs">{suffix}</span>}
   </label>
 );
 
@@ -96,14 +114,23 @@ const SaveBar: React.FC<{ saving: boolean; onSave: () => void }> = ({ saving, on
     <button
       onClick={onSave}
       disabled={saving}
-      className="px-4 py-2 rounded-full bg-gradient-to-r from-[#B1D5E5] to-[#F48C74] text-white font-medium disabled:opacity-60"
+      className="relative px-4 py-2.5 rounded-2xl font-semibold
+                 bg-gradient-to-r from-[#FDE68A] via-[#FBCFE8] to-[#DDD6FE]
+                 ring-1 ring-white/60 shadow-md
+                 hover:shadow-xl hover:brightness-[1.08] active:brightness-95
+                 transition disabled:opacity-60"
     >
-      {saving ? "Saving..." : "Save"}
+      <span className="text-[#3B0764] drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
+        {saving ? "Saving..." : "Save"}
+      </span>
+      <span className="pointer-events-none absolute inset-0 rounded-2xl bg-white/10" />
     </button>
   </div>
 );
 
-// ---------- Types & helpers ----------
+/** ------------------------------------------------------------
+ * Types & helpers
+ * ------------------------------------------------------------ */
 type MacroKey = "calories" | "protein" | "carbs" | "fat" | "fiber";
 
 const toNum = (v: any) => (typeof v === "number" ? v : Number(v) || 0);
@@ -113,7 +140,9 @@ const avg = (arr: number[]) => {
   return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
 };
 
-// ---------- Component ----------
+/** ------------------------------------------------------------
+ * Component
+ * ------------------------------------------------------------ */
 const GoalsPage: React.FC = () => {
   const [logs, setLogs] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -193,7 +222,11 @@ const GoalsPage: React.FC = () => {
       s.push({
         key: "calories-down",
         text: `You're averaging ${m.calories} kcal; your max is ${cal.max}. Reduce calorie max by 100?`,
-        apply: () => setDraft((d) => ({ ...d, macros: { ...d.macros, calories: { min: cal.min, max: Math.max(100, (cal.max || 0) - 100) } } })),
+        apply: () =>
+          setDraft((d) => ({
+            ...d,
+            macros: { ...d.macros, calories: { min: cal.min, max: Math.max(100, (cal.max || 0) - 100) } },
+          })),
       });
     }
     if (cal?.min && m.calories < cal.min - 100) {
@@ -210,7 +243,8 @@ const GoalsPage: React.FC = () => {
       s.push({
         key: "protein-up",
         text: `Avg protein ${m.protein}g; min is ${prot.min}g. Increase protein min by 10g?`,
-        apply: () => setDraft((d) => ({ ...d, macros: { ...d.macros, protein: { min: (prot.min || 0) + 10, max: prot.max } } })),
+        apply: () =>
+          setDraft((d) => ({ ...d, macros: { ...d.macros, protein: { min: (prot.min || 0) + 10, max: prot.max } } })),
       });
     }
 
@@ -248,9 +282,26 @@ const GoalsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-lightblue p-4 md:p-6">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FDE68A] via-[#FBCFE8] to-[#DDD6FE]">
+      {/* Luxe pastel aura background */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-60"
+          style={{ background: "radial-gradient( circle at 30% 30%, #FDE68A 0%, transparent 60% )" }}
+        />
+        <div
+          className="absolute top-10 right-0 h-96 w-96 rounded-full blur-3xl opacity-60"
+          style={{ background: "radial-gradient( circle at 70% 30%, #DDD6FE 0%, transparent 60% )" }}
+        />
+        <div
+          className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full blur-3xl opacity-50"
+          style={{ background: "radial-gradient( circle at 50% 50%, #F5D0FE 0%, transparent 60% )" }}
+        />
+      </div>
+
+      <div className="p-6">
       <Navbar />
-      <main className="max-w-7xl mx-auto mt-6 md:mt-10 space-y-6 md:space-y-8">
+      <main className="max-w-7xl mx-auto mt-6 md:mt-10 space-y-6 md:space-y-8 p-4 md:p-0">
         <PageHeader
           title="Goals"
           subtitle="Set clear targets and see your recent data against them."
@@ -262,11 +313,14 @@ const GoalsPage: React.FC = () => {
           <Card title="Adaptive suggestions" subtitle="Small nudges from your recent averages">
             <div className="grid gap-2">
               {suggestions.map((s) => (
-                <div key={s.key} className="flex items-center justify-between bg-white border border-[#B1D5E5] rounded-2xl px-3 py-2">
-                  <div className="text-sm text-blue-700">{s.text}</div>
+                <div
+                  key={s.key}
+                  className="flex items-center justify-between bg-white/50 border border-white/70 rounded-2xl px-3 py-2"
+                >
+                  <div className="text-sm text-[#3B0764]">{s.text}</div>
                   <button
                     onClick={s.apply}
-                    className="px-3 py-1 rounded-full bg-gradient-to-r from-[#B1D5E5] to-[#F48C74] text-white text-xs"
+                    className="relative px-3 py-1 rounded-2xl font-semibold bg-gradient-to-r from-[#FDE68A] to-[#FBCFE8] text-[#3B0764] text-xs shadow-md"
                   >
                     Apply
                   </button>
@@ -278,23 +332,23 @@ const GoalsPage: React.FC = () => {
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-white border border-[#B1D5E5] rounded-2xl px-4 py-3 text-center">
-            <div className="text-xs md:text-sm text-blue-700">Avg Calories</div>
-            <div className="text-lg md:text-2xl font-semibold text-[#067BC2]">{series.macroAvg.calories} kcal</div>
+          <div className="bg-white/50 border border-white/70 rounded-2xl px-4 py-3 text-center">
+            <div className="text-xs md:text-sm text-[#6B21A8]">Avg Calories</div>
+            <div className="text-lg md:text-2xl font-semibold text-[#3B0764]">{series.macroAvg.calories} kcal</div>
           </div>
-          <div className="bg-white border border-[#B1D5E5] rounded-2xl px-4 py-3 text-center">
-            <div className="text-xs md:text-sm text-blue-700">Avg Protein</div>
-            <div className="text-lg md:text-2xl font-semibold text-[#067BC2]">{series.macroAvg.protein} g</div>
+          <div className="bg-white/50 border border-white/70 rounded-2xl px-4 py-3 text-center">
+            <div className="text-xs md:text-sm text-[#6B21A8]">Avg Protein</div>
+            <div className="text-lg md:text-2xl font-semibold text-[#3B0764]">{series.macroAvg.protein} g</div>
           </div>
-          <div className="bg-white border border-[#B1D5E5] rounded-2xl px-4 py-3 text-center">
-            <div className="text-xs md:text-sm text-blue-700">Avg Steps</div>
-            <div className="text-lg md:text-2xl font-semibold text-[#067BC2]">
+          <div className="bg-white/50 border border-white/70 rounded-2xl px-4 py-3 text-center">
+            <div className="text-xs md:text-sm text-[#6B21A8]">Avg Steps</div>
+            <div className="text-lg md:text-2xl font-semibold text-[#3B0764]">
               {Math.round(avg(series.stepsData.map((x) => x.steps)))}
             </div>
           </div>
-          <div className="bg-white border border-[#B1D5E5] rounded-2xl px-4 py-3 text-center">
-            <div className="text-xs md:text-sm text-blue-700">Avg Minutes</div>
-            <div className="text-lg md:text-2xl font-semibold text-[#067BC2]">
+          <div className="bg-white/50 border border-white/70 rounded-2xl px-4 py-3 text-center">
+            <div className="text-xs md:text-sm text-[#6B21A8]">Avg Minutes</div>
+            <div className="text-lg md:text-2xl font-semibold text-[#3B0764]">
               {Math.round(avg(series.minutesData.map((x) => x.minutes)))} min
             </div>
           </div>
@@ -313,7 +367,7 @@ const GoalsPage: React.FC = () => {
               value={draft.steps?.max}
               onChange={(v) => setDraft((d) => ({ ...d, steps: { min: d.steps?.min, max: v } }))}
             />
-            <div className="bg-white border border-[#B1D5E5] rounded-2xl px-3 py-2 text-blue-700 text-sm flex items-center">
+            <div className="bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#3B0764] text-sm flex items-center">
               Tip: aim for a range you can hit 5+ days/week.
             </div>
           </div>
@@ -321,16 +375,35 @@ const GoalsPage: React.FC = () => {
           <div className="h-60 w-full mt-3">
             <ResponsiveContainer>
               <LineChart data={series.stepsData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={44} />
-                <Tooltip contentStyle={{ background: "white", border: "1px solid #B1D5E5", borderRadius: 12, fontSize: 12 }} />
+                <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: COLORS.textMuted }} />
+                <YAxis tick={{ fontSize: 12, fill: COLORS.textMuted }} width={44} />
+                <Tooltip
+                  contentStyle={{
+                    background: "white",
+                    border: `1px solid ${COLORS.primarySoft}`,
+                    borderRadius: 12,
+                    fontSize: 12,
+                    color: COLORS.text,
+                  }}
+                />
                 {draft.steps?.min != null && draft.steps?.max != null && (
-                  <ReferenceArea y1={draft.steps.min} y2={draft.steps.max} fill="#84BCDA" fillOpacity={0.18} />
+                  <ReferenceArea y1={draft.steps.min} y2={draft.steps.max} fill={COLORS.bandPurple} />
                 )}
-                {draft.steps?.min != null && <ReferenceLine y={draft.steps.min} stroke="#067BC2" strokeDasharray="4 4" />}
-                {draft.steps?.max != null && <ReferenceLine y={draft.steps.max} stroke="#F37748" strokeDasharray="6 4" />}
-                <Line type="monotone" dataKey="steps" stroke="#4F46E5" strokeWidth={2} dot={false} />
+                {draft.steps?.min != null && (
+                  <ReferenceLine y={draft.steps.min} stroke={COLORS.primary} strokeDasharray="4 4" strokeWidth={2} />
+                )}
+                {draft.steps?.max != null && (
+                  <ReferenceLine y={draft.steps.max} stroke={COLORS.accent} strokeDasharray="6 4" strokeWidth={2} />
+                )}
+                <Line
+                  type="monotone"
+                  dataKey="steps"
+                  stroke={COLORS.primary}
+                  strokeWidth={3}
+                  dot={{ r: 3, stroke: COLORS.accentSoft, strokeWidth: 2, fill: "#fff" }}
+                  activeDot={{ r: 5, strokeWidth: 2, stroke: COLORS.accent, fill: "#fff" }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -339,10 +412,10 @@ const GoalsPage: React.FC = () => {
         {/* Workout Goal */}
         <Card title="Workout Goal" subtitle="Pick a type and set a target (time or calories)">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <label className="bg-white border border-[#B1D5E5] rounded-2xl px-3 py-2 text-blue-700 text-sm">
+            <label className="bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8] text-sm">
               <span className="mr-2">Type</span>
               <select
-                className="outline-none text-[#067BC2] bg-transparent"
+                className="outline-none text-[#3B0764] bg-transparent"
                 value={draft.workout?.type || "gym"}
                 onChange={(e) => setDraft((d) => ({ ...d, workout: { ...d.workout, type: e.target.value } }))}
               >
@@ -353,10 +426,10 @@ const GoalsPage: React.FC = () => {
               </select>
             </label>
 
-            <label className="bg-white border border-[#B1D5E5] rounded-2xl px-3 py-2 text-blue-700 text-sm">
+            <label className="bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8] text-sm">
               <span className="mr-2">Mode</span>
               <select
-                className="outline-none text-[#067BC2] bg-transparent"
+                className="outline-none text-[#3B0764] bg-transparent"
                 value={draft.workout?.mode || "time"}
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, workout: { ...d.workout, mode: e.target.value as "time" | "calories" } }))
@@ -378,14 +451,29 @@ const GoalsPage: React.FC = () => {
           <div className="h-60 w-full mt-3">
             <ResponsiveContainer>
               <BarChart data={series.minutesData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={44} />
-                <Tooltip contentStyle={{ background: "white", border: "1px solid #B1D5E5", borderRadius: 12, fontSize: 12 }} />
+                <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: COLORS.textMuted }} />
+                <YAxis tick={{ fontSize: 12, fill: COLORS.textMuted }} width={44} />
+                <Tooltip
+                  contentStyle={{
+                    background: "white",
+                    border: `1px solid ${COLORS.primarySoft}`,
+                    borderRadius: 12,
+                    fontSize: 12,
+                    color: COLORS.text,
+                  }}
+                />
                 {draft.workout?.mode === "time" && draft.workout?.target != null && (
-                  <ReferenceLine y={draft.workout.target} stroke="#F37748" strokeDasharray="6 4" />
+                  <ReferenceLine y={draft.workout.target} stroke={COLORS.accent} strokeDasharray="6 4" strokeWidth={2} />
                 )}
-                <Bar dataKey="minutes" fill="#84BCDA" radius={[8, 8, 0, 0]} name="Minutes" />
+                <Bar
+                  dataKey="minutes"
+                  name="Minutes"
+                  fill={COLORS.primary}
+                  stroke={COLORS.primary}
+                  strokeWidth={1.5}
+                  radius={[10, 10, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -419,20 +507,34 @@ const GoalsPage: React.FC = () => {
           <div className="h-72 w-full mt-3">
             <ResponsiveContainer>
               <BarChart data={series.macroCompareData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={44} />
+                <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: COLORS.textMuted }} />
+                <YAxis tick={{ fontSize: 12, fill: COLORS.textMuted }} width={44} />
                 <Tooltip
-                  contentStyle={{ background: "white", border: "1px solid #B1D5E5", borderRadius: 12, fontSize: 12 }}
-                  formatter={(value: any, name) => {
-                    if (name === "Your Avg") return [value, name];
-                    return [value, name];
+                  contentStyle={{
+                    background: "white",
+                    border: `1px solid ${COLORS.primarySoft}`,
+                    borderRadius: 12,
+                    fontSize: 12,
+                    color: COLORS.text,
                   }}
                 />
-                <Legend />
-                {/* Display min/max bands with reference lines (per-axis, illustrative).
-                   For per-bar bands, we’d use custom shapes; this keeps UI clean. */}
-                <Bar dataKey="avg" name="Your Avg" fill="#067BC2" radius={[8, 8, 0, 0]} />
+                <Legend
+                  wrapperStyle={{
+                    color: COLORS.text,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar
+                  dataKey="avg"
+                  name="Your Avg"
+                  fill={COLORS.primary}
+                  stroke={COLORS.primary}
+                  strokeWidth={1.5}
+                  radius={[10, 10, 0, 0]}
+                />
+                {/* Optional goal bands per bar (min/max) */}
+                {/* You can add custom shapes if you want min/max range visual per macro */}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -453,11 +555,11 @@ const GoalsPage: React.FC = () => {
               onChange={(v) => setDraft((d) => ({ ...d, goalWeight: v }))}
               suffix="kg"
             />
-            <label className="flex items-center gap-2 bg-white border border-[#B1D5E5] rounded-2xl px-3 py-2">
-              <span className="text-blue-700 text-sm min-w-[110px]">Target date</span>
+            <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8] text-sm">
+              <span className="min-w-[110px]">Target date</span>
               <input
                 type="date"
-                className="flex-1 outline-none text-[#067BC2] bg-transparent"
+                className="flex-1 outline-none text-[#3B0764] bg-transparent"
                 value={draft.targetDate || ""}
                 onChange={(e) => setDraft((d) => ({ ...d, targetDate: e.target.value || null }))}
               />
@@ -467,19 +569,36 @@ const GoalsPage: React.FC = () => {
           <div className="h-60 w-full mt-3">
             <ResponsiveContainer>
               <LineChart data={series.weightData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={44} />
-                <Tooltip contentStyle={{ background: "white", border: "1px solid #B1D5E5", borderRadius: 12, fontSize: 12 }} />
-                {draft.goalWeight != null && <ReferenceLine y={draft.goalWeight} stroke="#F37748" strokeDasharray="6 4" />}
-                <Line type="monotone" dataKey="weight" stroke="#067BC2" strokeWidth={2} dot={false} />
+                <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: COLORS.textMuted }} />
+                <YAxis tick={{ fontSize: 12, fill: COLORS.textMuted }} width={44} />
+                <Tooltip
+                  contentStyle={{
+                    background: "white",
+                    border: `1px solid ${COLORS.primarySoft}`,
+                    borderRadius: 12,
+                    fontSize: 12,
+                    color: COLORS.text,
+                  }}
+                />
+                {draft.goalWeight != null && (
+                  <ReferenceLine y={draft.goalWeight} stroke={COLORS.accent} strokeDasharray="6 4" strokeWidth={2} />
+                )}
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke={COLORS.primary}
+                  strokeWidth={3}
+                  dot={{ r: 3, stroke: COLORS.accentSoft, strokeWidth: 2, fill: "#fff" }}
+                  activeDot={{ r: 5, strokeWidth: 2, stroke: COLORS.accent, fill: "#fff" }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
-        {/* Non‑Weight Goals */}
-        <Card title="Non‑Weight Goals" subtitle="Sleep & hydration targets support recovery.">
+        {/* Non-Weight Goals */}
+        <Card title="Non-Weight Goals" subtitle="Sleep & hydration targets support recovery.">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="grid grid-cols-2 gap-2">
               <NumberInput
@@ -488,7 +607,7 @@ const GoalsPage: React.FC = () => {
                 onChange={(v) =>
                   setDraft((d) => ({
                     ...d,
-                    nonWeight: { ...d.nonWeight, sleepHours: { ...d.nonWeight?.sleepHours, min: v } },
+                    nonWeight: { ...d, sleepHours: { ...d.nonWeight?.sleepHours, min: v } as any }.nonWeight,
                   }))
                 }
                 suffix="hrs"
@@ -500,7 +619,7 @@ const GoalsPage: React.FC = () => {
                 onChange={(v) =>
                   setDraft((d) => ({
                     ...d,
-                    nonWeight: { ...d.nonWeight, sleepHours: { ...d.nonWeight?.sleepHours, max: v } },
+                    nonWeight: { ...d, sleepHours: { ...d.nonWeight?.sleepHours, max: v } as any }.nonWeight,
                   }))
                 }
                 suffix="hrs"
@@ -514,7 +633,7 @@ const GoalsPage: React.FC = () => {
                 onChange={(v) =>
                   setDraft((d) => ({
                     ...d,
-                    nonWeight: { ...d.nonWeight, waterLiters: { ...d.nonWeight?.waterLiters, min: v } },
+                    nonWeight: { ...d, waterLiters: { ...d.nonWeight?.waterLiters, min: v } as any }.nonWeight,
                   }))
                 }
                 suffix="L"
@@ -526,7 +645,7 @@ const GoalsPage: React.FC = () => {
                 onChange={(v) =>
                   setDraft((d) => ({
                     ...d,
-                    nonWeight: { ...d.nonWeight, waterLiters: { ...d.nonWeight?.waterLiters, max: v } },
+                    nonWeight: { ...d, waterLiters: { ...d.nonWeight?.waterLiters, max: v } as any }.nonWeight,
                   }))
                 }
                 suffix="L"
@@ -560,6 +679,7 @@ const GoalsPage: React.FC = () => {
 
         <SaveBar saving={saving} onSave={saveGoals} />
       </main>
+    </div>
     </div>
   );
 };

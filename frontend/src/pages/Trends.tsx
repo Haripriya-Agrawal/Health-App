@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo,  useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { dailyLogService } from "../services/dailyLogService";
 import { goalsService } from "../services/goalsService";
@@ -18,12 +18,6 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-/**
- * Keeps your palette & rounding:
- * Blue(#067BC2) Orange(#F37748) Yellow(#ECC30B) LightBlue(#84BCDA) Indigo(#4F46E5) BG(#FEEFEF)
- * Cards: rounded-2xl, soft borders, subtle shadows.
- */
 
 // ---------- Types ----------
 type Log = {
@@ -72,8 +66,8 @@ const PageHeader: React.FC<{ title: string; subtitle?: string; right?: React.Rea
 }) => (
   <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
-      <h1 className="text-xl md:text-2xl font-semibold text-[#067BC2]">{title}</h1>
-      {subtitle && <p className="text-sm md:text-base text-blue-700/80">{subtitle}</p>}
+      <h1 className="text-xl md:text-2xl font-semibold text-[#3B0764]">{title}</h1>
+      {subtitle && <p className="text-sm md:text-base text-[#3B0764]/70">{subtitle}</p>}
     </div>
     {right}
   </div>
@@ -86,25 +80,35 @@ const Card: React.FC<{
   className?: string;
   right?: React.ReactNode;
 }> = ({ title, subtitle, children, className = "", right }) => (
-  <section className={`bg-[#FEEFEF] rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow ${className}`}>
-    {(title || right) && (
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          {title && <h2 className="text-[#007BFF] font-semibold text-base md:text-lg">{title}</h2>}
-          {subtitle && <div className="text-[11px] md:text-xs text-blue-500">{subtitle}</div>}
+  <section
+    className={`group [perspective:1200px] ${className}`}
+  >
+    <div
+      className="rounded-[28px] p-4 md:p-6 bg-white/25 backdrop-blur-xl border border-white/60
+                 shadow-[0_8px_30px_rgba(0,0,0,0.08)]
+                 transform-gpu transition-all duration-300
+                 group-hover:-translate-y-2 group-hover:scale-[1.015]
+                 group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+    >
+      {(title || right) && (
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            {title && <h2 className="text-[#6B21A8] font-semibold text-base md:text-lg">{title}</h2>}
+            {subtitle && <div className="text-[11px] md:text-xs text-[#6B21A8]/70">{subtitle}</div>}
+          </div>
+          {right}
         </div>
-        {right}
-      </div>
-    )}
-    {children}
+      )}
+      {children}
+    </div>
   </section>
 );
 
 const Stat: React.FC<{ label: string; value: string | number; foot?: string }> = ({ label, value, foot }) => (
-  <div className="bg-white border border-[#B1D5E5] rounded-2xl px-4 py-3 text-center">
-    <div className="text-xs md:text-sm text-blue-700">{label}</div>
-    <div className="text-lg md:text-2xl font-semibold text-[#067BC2]">{value}</div>
-    {foot && <div className="text-[11px] md:text-xs text-blue-700/70">{foot}</div>}
+  <div className="bg-white/60 border border-white/70 rounded-2xl px-4 py-3 text-center backdrop-blur">
+    <div className="text-xs md:text-sm text-[#6B21A8]">{label}</div>
+    <div className="text-lg md:text-2xl font-semibold text-[#3B0764]">{value}</div>
+    {foot && <div className="text-[11px] md:text-xs text-[#6B21A8]/80">{foot}</div>}
   </div>
 );
 
@@ -113,8 +117,11 @@ const ButtonChip: React.FC<
 > = ({ active, className = "", ...props }) => (
   <button
     {...props}
-    className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-all focus:outline-none focus:ring-2 focus:ring-[#B1D5E5] 
-      ${active ? "bg-gradient-to-r from-[#B1D5E5] to-[#F48C74] text-white shadow" : "bg-white border border-[#B1D5E5] text-blue-700"} ${className}`}
+    className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-all
+      focus:outline-none focus:ring-2 focus:ring-white/60 backdrop-blur
+      ${active
+        ? "text-[#3B0764] bg-white/60 border border-white/80 shadow"
+        : "text-[#3B0764] bg-white/30 border border-white/60 hover:bg-white/50"} ${className}`}
   />
 );
 
@@ -190,7 +197,6 @@ const Trends: React.FC = () => {
       { name: "Fat", value: avgFat * 9 },
     ];
 
-    // build recharts datasets
     const lineWeightData = labels.map((l, i) => ({
       label: l,
       weight: weightsC[i],
@@ -226,16 +232,27 @@ const Trends: React.FC = () => {
   // Loading & empty
   if (loading) {
     return (
-      <div className="min-h-screen bg-lightblue p-4 md:p-6">
-        <Navbar />
-        <div className="max-w-7xl mx-auto mt-6 md:mt-10 space-y-4">
-          <div className="h-8 w-64 bg-white/60 rounded-xl animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 bg-white/60 rounded-2xl animate-pulse" />
-            ))}
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FDE68A] via-[#FBCFE8] to-[#DDD6FE]">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-60"
+               style={{ background: "radial-gradient( circle at 30% 30%, #FDE68A 0%, transparent 60% )" }} />
+          <div className="absolute top-10 right-0 h-96 w-96 rounded-full blur-3xl opacity-60"
+               style={{ background: "radial-gradient( circle at 70% 30%, #DDD6FE 0%, transparent 60% )" }} />
+          <div className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full blur-3xl opacity-50"
+               style={{ background: "radial-gradient( circle at 50% 50%, #F5D0FE 0%, transparent 60% )" }} />
+        </div>
+
+        <div className="p-6">
+          <Navbar />
+          <div className="max-w-7xl mx-auto mt-6 md:mt-10 space-y-4">
+            <div className="h-8 w-64 bg-white/40 rounded-xl animate-pulse" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-24 bg-white/40 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+            <div className="h-64 bg-white/40 rounded-2xl animate-pulse" />
           </div>
-          <div className="h-64 bg-white/60 rounded-2xl animate-pulse" />
         </div>
       </div>
     );
@@ -243,11 +260,24 @@ const Trends: React.FC = () => {
 
   if (!logs.length) {
     return (
-      <div className="min-h-screen bg-lightblue p-4 md:p-6">
-        <Navbar />
-        <div className="max-w-4xl mx-auto mt-10 bg-white rounded-2xl p-8 text-center">
-          <h2 className="text-[#067BC2] font-semibold text-lg">No data yet</h2>
-          <p className="text-blue-700/80 mt-2">Log your weight, activity, and meals to see trends here.</p>
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FDE68A] via-[#FBCFE8] to-[#DDD6FE]">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-60"
+               style={{ background: "radial-gradient( circle at 30% 30%, #FDE68A 0%, transparent 60% )" }} />
+          <div className="absolute top-10 right-0 h-96 w-96 rounded-full blur-3xl opacity-60"
+               style={{ background: "radial-gradient( circle at 70% 30%, #DDD6FE 0%, transparent 60% )" }} />
+          <div className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full blur-3xl opacity-50"
+               style={{ background: "radial-gradient( circle at 50% 50%, #F5D0FE 0%, transparent 60% )" }} />
+        </div>
+
+        <div className="p-6">
+          <Navbar />
+          <div className="max-w-4xl mx-auto mt-10">
+            <div className="rounded-[28px] p-8 text-center bg-white/25 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+              <h2 className="text-[#6B21A8] font-semibold text-lg">No data yet</h2>
+              <p className="text-[#6B21A8]/80 mt-2">Log your weight, activity, and meals to see trends here.</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -266,148 +296,160 @@ const Trends: React.FC = () => {
 
   const donutColors = ["#067BC2", "#F37748", "#ECC30B"];
 
-  // Custom tooltip styles (subtle, matches palette)
   const tooltipStyle = {
     background: "white",
-    border: "1px solid #B1D5E5",
+    border: "1px solid rgba(255,255,255,0.7)",
     borderRadius: "12px",
     fontSize: "12px",
     padding: "8px",
+    backdropFilter: "blur(8px)",
   } as React.CSSProperties;
 
   return (
-    <div className="min-h-screen bg-lightblue p-4 md:p-6">
-      <Navbar />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FDE68A] via-[#FBCFE8] to-[#DDD6FE]">
+      {/* Aura blobs */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-60"
+             style={{ background: "radial-gradient( circle at 30% 30%, #FDE68A 0%, transparent 60% )" }} />
+        <div className="absolute top-10 right-0 h-96 w-96 rounded-full blur-3xl opacity-60"
+             style={{ background: "radial-gradient( circle at 70% 30%, #DDD6FE 0%, transparent 60% )" }} />
+        <div className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full blur-3xl opacity-50"
+             style={{ background: "radial-gradient( circle at 50% 50%, #F5D0FE 0%, transparent 60% )" }} />
+      </div>
 
-      <main className="max-w-7xl mx-auto mt-6 md:mt-10 space-y-6 md:space-y-8">
-        {/* Header + Filters */}
-        <PageHeader
-          title="Trends & Insights"
-          subtitle="Visualize your progress and goal adherence over time."
-          right={
-            <div className="flex items-center gap-2">
-              {(["7d", "30d", "90d", "all"] as const).map((r) => (
-                <ButtonChip key={r} active={range === r} onClick={() => setRange(r)} aria-pressed={range === r}>
-                  {r.toUpperCase()}
-                </ButtonChip>
-              ))}
-            </div>
-          }
-        />
+      <div className="p-6">
+        <Navbar />
 
-        {/* KPI Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <Stat label="Days in View" value={series.kpis.days} />
-          <Stat label="Weight Δ" value={`${series.kpis.weightDelta >= 0 ? "+" : ""}${series.kpis.weightDelta} kg`} foot="(first → last)" />
-          <Stat label="Avg Calories" value={`${series.kpis.kcalAvg} kcal`} />
-          <Stat label="Avg Active Minutes" value={`${series.kpis.activeMinAvg} min`} />
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          {/* Weight Trend */}
-          <Card title="Weight Trend" subtitle="7‑day moving average overlay">
-            <div className="h-64 w-full">
-              <ResponsiveContainer>
-                <RLineChart data={series.lineWeightData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={40} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="weight" stroke="#067BC2" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="ma7" stroke="#F37748" strokeWidth={2} dot={false} strokeDasharray="4 4" />
-                </RLineChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Macro Split Donut */}
-          <Card title="Average Daily Macro Energy Split" subtitle="Protein / Carbs / Fat → kcal">
-            <div className="flex flex-col md:flex-row items-center md:items-stretch gap-4">
-              <div className="h-64 w-full md:w-1/2">
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={series.kcalSplit}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius="60%"
-                      outerRadius="85%"
-                      paddingAngle={2}
-                    >
-                      {series.kcalSplit.map((_, i) => (
-                        <Cell key={`c-${i}`} fill={donutColors[i % donutColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`${Math.round(v as number)} kcal`, ""]} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="grid grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm w-full md:w-1/2">
-                {series.kcalSplit.map((p, i) => (
-                  <div key={i} className="bg-white border border-[#B1D5E5] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-center">
-                    <div className="font-semibold">{p.name}</div>
-                    <div className="text-blue-700">{Math.round(p.value)} kcal/day</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          {/* Macros vs Goals (full-width) */}
-          <Card
-            title="Macros vs Goals"
+        <main className="max-w-7xl mx-auto mt-6 md:mt-10 space-y-6 md:space-y-8">
+          {/* Header + Filters */}
+          <PageHeader
+            title=""
+            subtitle=""
             right={
-              <div className="flex gap-2 overflow-x-auto no-scrollbar px-1">
-                {(["calories", "protein", "carbs", "fat", "fiber"] as const).map((m) => (
-                  <ButtonChip key={m} active={macroMetric === m} onClick={() => setMacroMetric(m)} aria-pressed={macroMetric === m}>
-                    {m[0].toUpperCase() + m.slice(1)}
+              <div className="flex items-center gap-2">
+                {(["7d", "30d", "90d", "all"] as const).map((r) => (
+                  <ButtonChip key={r} active={range === r} onClick={() => setRange(r)} aria-pressed={range === r}>
+                    {r.toUpperCase()}
                   </ButtonChip>
                 ))}
               </div>
             }
-            className="lg:col-span-2"
-            subtitle={
-              macroGoalValue != null
-                ? `Goal: ${macroMetric === "calories" ? macroGoalValue + " kcal" : macroGoalValue + " g"}`
-                : "Set your macro goals in Goals page to see target lines"
-            }
-          >
-            <div className="h-72 w-full">
-              <ResponsiveContainer>
-                <RBarChart data={series.barMacroData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={40} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey={macroMetric} fill={macroBarColor} radius={[6, 6, 0, 0]} />
-                  {macroGoalValue != null && (
-                    <ReferenceLine y={macroGoalValue} stroke="#F37748" strokeDasharray="6 4" />
-                  )}
-                </RBarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+          />
 
-          {/* Activity Minutes (full-width) */}
-          <Card title="Activity Minutes" subtitle="Daily duration (min)" className="lg:col-span-2">
-            <div className="h-64 w-full">
-              <ResponsiveContainer>
-                <RLineChart data={series.lineMinutesData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke="#E6F2F8" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#2563eb" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "#2563eb" }} width={40} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="minutes" stroke="#4F46E5" strokeWidth={2} dot={false} />
-                </RLineChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </div>
-      </main>
+          {/* KPI Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <Stat label="Days in View" value={series.kpis.days} />
+            <Stat label="Weight Δ" value={`${series.kpis.weightDelta >= 0 ? "+" : ""}${series.kpis.weightDelta} kg`} foot="(first → last)" />
+            <Stat label="Avg Calories" value={`${series.kpis.kcalAvg} kcal`} />
+            <Stat label="Avg Active Minutes" value={`${series.kpis.activeMinAvg} min`} />
+          </div>
+
+          {/* Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            {/* Weight Trend */}
+            <Card title="Weight Trend" subtitle="7-day moving average overlay">
+              <div className="h-64 w-full">
+                <ResponsiveContainer>
+                  <RLineChart data={series.lineWeightData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#E6F2F8" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#3B0764" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#3B0764" }} width={40} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="weight" stroke="#067BC2" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="ma7" stroke="#F37748" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                  </RLineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Macro Split Donut */}
+            <Card title="Average Daily Macro Energy Split" subtitle="Protein / Carbs / Fat → kcal">
+              <div className="flex flex-col md:flex-row items-center md:items-stretch gap-4">
+                <div className="h-64 w-full md:w-1/2">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={series.kcalSplit}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius="60%"
+                        outerRadius="85%"
+                        paddingAngle={2}
+                      >
+                        {series.kcalSplit.map((_, i) => (
+                          <Cell key={`c-${i}`} fill={donutColors[i % donutColors.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`${Math.round(v as number)} kcal`, ""]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm w-full md:w-1/2">
+                  {series.kcalSplit.map((p, i) => (
+                    <div key={i} className="bg-white/60 border border-white/70 rounded-2xl px-3 md:px-4 py-2 md:py-3 text-center backdrop-blur">
+                      <div className="font-semibold text-[#3B0764]">{p.name}</div>
+                      <div className="text-[#6B21A8]">{Math.round(p.value)} kcal/day</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+
+            {/* Macros vs Goals (full-width) */}
+            <Card
+              title="Macros vs Goals"
+              right={
+                <div className="flex gap-2 overflow-x-auto no-scrollbar px-1">
+                  {(["calories", "protein", "carbs", "fat", "fiber"] as const).map((m) => (
+                    <ButtonChip key={m} active={macroMetric === m} onClick={() => setMacroMetric(m)} aria-pressed={macroMetric === m}>
+                      {m[0].toUpperCase() + m.slice(1)}
+                    </ButtonChip>
+                  ))}
+                </div>
+              }
+              className="lg:col-span-2"
+              subtitle={
+                macroGoalValue != null
+                  ? `Goal: ${macroMetric === "calories" ? macroGoalValue + " kcal" : macroGoalValue + " g"}`
+                  : "Set your macro goals in Goals page to see target lines"
+              }
+            >
+              <div className="h-72 w-full">
+                <ResponsiveContainer>
+                  <RBarChart data={series.barMacroData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#E6F2F8" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#3B0764" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#3B0764" }} width={40} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey={macroMetric} fill={macroBarColor} radius={[6, 6, 0, 0]} />
+                    {macroGoalValue != null && (
+                      <ReferenceLine y={macroGoalValue} stroke="#F37748" strokeDasharray="6 4" />
+                    )}
+                  </RBarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Activity Minutes (full-width) */}
+            <Card title="Activity Minutes" subtitle="Daily duration (min)" className="lg:col-span-2">
+              <div className="h-64 w-full">
+                <ResponsiveContainer>
+                  <RLineChart data={series.lineMinutesData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="#E6F2F8" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#3B0764" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#3B0764" }} width={40} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="minutes" stroke="#4F46E5" strokeWidth={2} dot={false} />
+                  </RLineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

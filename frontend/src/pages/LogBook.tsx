@@ -51,13 +51,6 @@ const LogBook: React.FC = () => {
     fetchLogs();
   }, []);
 
-  const highlightRow = (calories: number | undefined) => {
-    if (!calories) return "bg-white hover:bg-lightblue hover:bg-opacity-50";
-    if (calories > 2500) return "bg-orange-100 hover:bg-orange-200";
-    if (calories < 1200) return "bg-blue-100 hover:bg-blue-200";
-    return "bg-white hover:bg-lightblue hover:bg-opacity-50";
-  };
-
   // ---------- CSV EXPORT ----------
   const toPlainWeight = (w?: WeightShape) => {
     if (w == null) return { weight: "", measuredAt: "" };
@@ -89,7 +82,6 @@ const LogBook: React.FC = () => {
     try {
       setExporting(true);
 
-      // Columns (stable order)
       const headers = [
         "Date",
         "Weight (kg)",
@@ -134,68 +126,114 @@ const LogBook: React.FC = () => {
   // --------------------------------
 
   return (
-    <div className="min-h-screen bg-lightblue p-6">
-      <Navbar />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FDE68A] via-[#FBCFE8] to-[#DDD6FE]">
+      {/* Luxe pastel aura background (same vibe as Home) */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-60"
+          style={{ background: "radial-gradient( circle at 30% 30%, #FDE68A 0%, transparent 60% )" }}
+        />
+        <div
+          className="absolute top-10 right-0 h-96 w-96 rounded-full blur-3xl opacity-60"
+          style={{ background: "radial-gradient( circle at 70% 30%, #DDD6FE 0%, transparent 60% )" }}
+        />
+        <div
+          className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full blur-3xl opacity-50"
+          style={{ background: "radial-gradient( circle at 50% 50%, #F5D0FE 0%, transparent 60% )" }}
+        />
+      </div>
 
-      <div className="max-w-6xl mx-auto bg-white rounded-xl md:rounded-2xl p-3 md:p-4 mt-10 shadow-md">
-        <div className="overflow-x-auto">
-          <table className="w-full text-center border-separate border-spacing-y-1 text-sm md:text-base">
-            <thead>
-              <tr className="font-bold text-gray-800">
-                <th className="p-2">Date</th>
-                <th className="p-2">Weight</th>
-                <th className="p-2">Activity</th>
-                <th className="p-2">Calories</th>
-                <th className="p-2">Carbs</th>
-                <th className="p-2">Protein</th>
-                <th className="p-2">Fats</th>
-                <th className="p-2">Fibre</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((entry, index) => (
-                <tr
-                  key={index}
-                  className={`transition-colors duration-200 cursor-pointer ${highlightRow(
-                    entry.macros?.calories
-                  )}`}
-                >
-                  <td className="p-2 rounded-l-lg">{entry.date}</td>
-                  <td className="p-2">{renderWeight(entry.weight)}</td>
-                  <td className="p-2">
-                    {entry.activity?.type
-                      ? `${entry.activity.type} (${entry.activity.steps || 0} steps, ${
-                          entry.activity.duration || 0
-                        } min)`
-                      : "-"}
-                  </td>
-                  <td className="p-2">{entry.macros?.calories || 0} kcal</td>
-                  <td className="p-2">{entry.macros?.carbs || 0}g</td>
-                  <td className="p-2">{entry.macros?.protein || 0}g</td>
-                  <td className="p-2">{entry.macros?.fat || 0}g</td>
-                  <td className="p-2 rounded-r-lg">{entry.macros?.fiber || 0}g</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-transparent p-6">
+        <Navbar />
 
-        <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
-          <button
-            onClick={handleExportCSV}
-            disabled={exporting}
-            className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white px-3 py-1.5 text-sm md:px-4 md:py-2 rounded-full shadow-md transition-all duration-200 disabled:opacity-60"
-          >
-            {exporting ? "Exporting..." : "Export as CSV ⬇️"}
-          </button>
+        <div className="max-w-6xl mx-auto mt-10">
+          <div className="rounded-[28px] p-4 md:p-5 bg-white/20 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-center border-separate border-spacing-y-2 text-sm md:text-base">
+                <thead>
+                  <tr className="text-[#3B0764] font-semibold">
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Weight</th>
+                    <th className="px-3 py-2">Activity</th>
+                    <th className="px-3 py-2">Calories</th>
+                    <th className="px-3 py-2">Carbs</th>
+                    <th className="px-3 py-2">Protein</th>
+                    <th className="px-3 py-2">Fats</th>
+                    <th className="px-3 py-2">Fibre</th>
+                  </tr>
+                </thead>
 
-          <button
-            className="bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-3 py-1.5 text-sm md:px-4 md:py-2 rounded-full shadow-md transition-all duration-200"
-            // onClick={handleExportExcel} // Optional: see note below
-            title="(Optional) We can wire this to Excel later"
-          >
-            View Trends 📈
-          </button>
+                <tbody>
+                  {logs.map((entry, index) => (
+                    <tr
+                      key={index}
+                      className={`
+                        group transform-gpu transition-all duration-300
+                        hover:-translate-y-1 hover:scale-[1.008]
+                        hover:drop-shadow-[0_12px_30px_rgba(0,0,0,0.18)]
+                      `}
+                    >
+                      <td className="px-3 py-2 first:rounded-l-xl bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.date}
+                      </td>
+                      <td className="px-3 py-2 bg-transparent group-hover:bg-white/40 transition-colors">
+                        {renderWeight(entry.weight)}
+                      </td>
+                      <td className="px-3 py-2 bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.activity?.type
+                          ? `${entry.activity.type} (${entry.activity.steps || 0} steps, ${entry.activity.duration || 0} min)`
+                          : "-"}
+                      </td>
+                      <td className="px-3 py-2 bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.macros?.calories || 0} kcal
+                      </td>
+                      <td className="px-3 py-2 bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.macros?.carbs || 0} g
+                      </td>
+                      <td className="px-3 py-2 bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.macros?.protein || 0} g
+                      </td>
+                      <td className="px-3 py-2 bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.macros?.fat || 0} g
+                      </td>
+                      <td className="px-3 py-2 last:rounded-r-xl bg-transparent group-hover:bg-white/40 transition-colors">
+                        {entry.macros?.fiber || 0} g
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
+              <button
+                onClick={handleExportCSV}
+                disabled={exporting}
+                className="
+                  relative px-4 py-2 rounded-full font-semibold
+                  bg-gradient-to-r from-[#4338CA] via-[#6D28D9] to-[#7C3AED]
+                  text-white ring-1 ring-white/50 shadow-md
+                  hover:shadow-xl hover:brightness-[1.08] active:brightness-95
+                  transition disabled:opacity-60
+                "
+              >
+                {exporting ? "Exporting..." : "Export as CSV ⬇️"}
+              </button>
+
+              <button
+                className="
+                  relative px-4 py-2 rounded-full font-semibold
+                  bg-gradient-to-r from-[#F59E0B] via-[#F97316] to-[#EF4444]
+                  text-white ring-1 ring-white/50 shadow-md
+                  hover:shadow-xl hover:brightness-[1.08] active:brightness-95
+                  transition
+                "
+                title="(Optional) We can wire this to Trends later"
+              >
+                View Trends 📈
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
