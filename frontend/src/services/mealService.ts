@@ -1,6 +1,6 @@
 import axios from "axios";
-// import { resolveApiBase } from "./_apiBase"; // 🔥 make sure the filename matches
-import { resolveApiBase } from "./_apiBase";
+
+import { resolveApiBase } from "./_apibase";
 
 const API_BASE = resolveApiBase();
 /** Try both common paths */
