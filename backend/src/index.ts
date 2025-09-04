@@ -1,6 +1,5 @@
-// backend/index.ts
+// backend/src/index.ts
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -19,37 +18,71 @@ import mealPlanRoutes from "./routes/mealPlan.routes";
 
 const app = express();
 
-// Trust proxy (important on Render/behind proxies if you ever use secure cookies)
+// Behind proxies (Render, etc.)
 app.set("trust proxy", 1);
 
-// Allow only our frontends (Vercel prod + previews + localhost)
-const allowedOrigins = new Set<string>([
-  "http://localhost:5173", // Vite dev
-  process.env.FRONTEND_URL_PROD || "", // e.g. https://yourapp.vercel.app or custom domain
-  process.env.FRONTEND_URL_STAGING || "", // optional specific preview domain, if you set one
-]);
+// ======= HARDENED CORS (manual; Express 5–safe) =======
+const ALLOWED = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  process.env.FRONTEND_URL_PROD || "",     // e.g. https://ai-health-analytics.vercel.app
+  process.env.FRONTEND_URL_STAGING || "",  // optional specific preview
+];
+const DEBUG_CORS = process.env.DEBUG_CORS === "1";
 
-const corsOptions: cors.CorsOptions = {
-  origin(origin, cb) {
-    // allow server-to-server, curl, Postman
-    if (!origin) return cb(null, true);
+app.use((req, res, next) => {
+  const origin = req.headers.origin as string | undefined;
 
-    const isVercelPreview = /\.vercel\.app$/.test(origin);
-    const isAllowed = isVercelPreview || allowedOrigins.has(origin);
+  // allow Postman/curl/no-origin, allow *.vercel.app previews, and allow explicit list
+  const isVercelPreview = origin ? /\.vercel\.app$/.test(origin) : false;
+  const isAllowed =
+    !origin || isVercelPreview || (origin ? ALLOWED.includes(origin) : false);
 
-    return cb(isAllowed ? null : new Error("CORS blocked"));
-  },
-  credentials: true,
-};
+  if (DEBUG_CORS) {
+    // eslint-disable-next-line no-console
+    console.log("[CORS]", {
+      origin,
+      isVercelPreview,
+      isAllowed,
+      method: req.method,
+      path: req.path,
+    });
+  }
 
-app.use(cors(corsOptions));
+  // Always vary by Origin so caches behave
+  res.setHeader("Vary", "Origin");
+
+  if (isAllowed) {
+    // Reflect the exact Origin (not *)
+    if (origin) res.setHeader("Access-Control-Allow-Origin", origin);
+    else res.setHeader("Access-Control-Allow-Origin", "*"); // for non-browser clients
+
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+
+  // Short-circuit preflight
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(isAllowed ? 204 : 403);
+  }
+
+  return next();
+});
+
+// Body parser AFTER CORS
 app.use(express.json({ limit: "1mb" }));
 
 /* --------------------------------- Routes -------------------------------- */
 
 app.get("/api/health", (_req, res) => res.status(200).json({ ok: true }));
-// alias some monitors use:
-app.get("/api/healthz", (_req, res) => res.status(200).send("ok"));
+app.get("/api/healthz", (_req, res) => res.status(200).send("ok")); // alias
 
 app.use("/api/auth", authRoutes);
 app.use("/api/daily-log", dailyLogRoutes);
