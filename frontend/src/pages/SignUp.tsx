@@ -16,7 +16,7 @@ interface RegisterData {
 /** ------------------------------------------------------------
  * Lightweight Confetti (no external libs)
  * ------------------------------------------------------------ */
-const ConfettiFX: React.FC<{ run: boolean; duration?: number }> = ({ run, duration = 5000 }) => {
+const ConfettiFX: React.FC<{ run: boolean; duration?: number }> = ({ run, duration = 1500 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -57,7 +57,6 @@ const ConfettiFX: React.FC<{ run: boolean; duration?: number }> = ({ run, durati
         p.x += p.vx;
         p.y += p.vy;
         p.a += p.va;
-        // gentle wind
         p.vx += Math.sin(t / 600 + p.y / 200) * 0.02;
 
         ctx.save();
@@ -65,9 +64,8 @@ const ConfettiFX: React.FC<{ run: boolean; duration?: number }> = ({ run, durati
         ctx.rotate(p.a);
         ctx.fillStyle = p.c;
 
-        if (p.shape === "rect") {
-          ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
-        } else {
+        if (p.shape === "rect") ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+        else {
           ctx.beginPath();
           ctx.arc(0, 0, p.r, 0, Math.PI * 2);
           ctx.fill();
@@ -80,11 +78,8 @@ const ConfettiFX: React.FC<{ run: boolean; duration?: number }> = ({ run, durati
         }
       }
 
-      if (elapsed < duration) {
-        rafRef.current = requestAnimationFrame(draw);
-      } else {
-        ctx.clearRect(0, 0, w, h);
-      }
+      if (elapsed < duration) rafRef.current = requestAnimationFrame(draw);
+      else ctx.clearRect(0, 0, w, h);
     };
 
     rafRef.current = requestAnimationFrame(draw);
@@ -97,14 +92,50 @@ const ConfettiFX: React.FC<{ run: boolean; duration?: number }> = ({ run, durati
   }, [run, duration]);
 
   if (!run) return null;
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-[60]"
-      aria-hidden="true"
-    />
-  );
+  return <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-[60]" aria-hidden="true" />;
 };
+
+/** ------------------------------------------------------------
+ * Reusable field helpers
+ * ------------------------------------------------------------ */
+const Field: React.FC<{
+  label: string;
+  children: React.ReactNode;
+}> = ({ label, children }) => (
+  <label className="relative flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
+    <span className="text-sm min-w-[110px]">{label}</span>
+    {children}
+  </label>
+);
+
+// Number input with an inside-right unit (kg, cm, yrs)
+const UnitField: React.FC<{
+  label: string;
+  name: string;
+  value: string;
+  placeholder: string;
+  unit: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ label, name, value, placeholder, unit, onChange }) => (
+  <div className="relative">
+    <label className="relative flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
+      <span className="text-sm min-w-[110px]">{label}</span>
+      <input
+        name={name}
+        value={value}
+        onChange={onChange}
+        type="number"
+        placeholder={placeholder}
+        className="flex-1 outline-none text-[#3B0764] bg-transparent placeholder:text-[#3B0764]/40 pr-10
+                   [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      />
+      {/* Absolutely positioned unit inside the pill */}
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#3B0764]/60">
+        {unit}
+      </span>
+    </label>
+  </div>
+);
 
 /** ------------------------------------------------------------
  * Page
@@ -153,7 +184,6 @@ const SignupPage: React.FC = () => {
 
       if (res.token) {
         localStorage.setItem("token", res.token);
-        // Confetti celebration before navigating
         setCelebrate(true);
         setTimeout(() => navigate("/home"), 1500);
       } else {
@@ -212,8 +242,7 @@ const SignupPage: React.FC = () => {
 
             <form onSubmit={onSubmit} className="mt-4 space-y-4">
               {/* Email */}
-              <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
-                <span className="text-sm min-w-[110px]">Email</span>
+              <Field label="Email">
                 <input
                   name="email"
                   value={form.email}
@@ -223,10 +252,10 @@ const SignupPage: React.FC = () => {
                   className="flex-1 outline-none text-[#3B0764] bg-transparent placeholder:text-[#3B0764]/40"
                   required
                 />
-              </label>
+              </Field>
 
               {/* Password with show/hide */}
-              <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
+              <label className="relative flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
                 <span className="text-sm min-w-[110px]">Password</span>
                 <input
                   name="password"
@@ -248,8 +277,7 @@ const SignupPage: React.FC = () => {
               </label>
 
               {/* Goal */}
-              <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
-                <span className="text-sm min-w-[110px]">Goal</span>
+              <Field label="Goal">
                 <select
                   name="goal"
                   value={form.goal}
@@ -261,64 +289,46 @@ const SignupPage: React.FC = () => {
                   <option value="maintenance">Maintenance</option>
                   <option value="gain">Weight Gain</option>
                 </select>
-              </label>
+              </Field>
 
               {/* Weights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
-                  <span className="text-sm min-w-[110px]">Current weight</span>
-                  <input
-                    name="currentWeight"
-                    value={form.currentWeight}
-                    onChange={onChange}
-                    type="number"
-                    placeholder="e.g. 92"
-                    className="flex-1 outline-none text-[#3B0764] bg-transparent placeholder:text-[#3B0764]/40"
-                  />
-                  <span className="text-xs text-[#3B0764]/60">kg</span>
-                </label>
-
-                <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
-                  <span className="text-sm min-w-[110px]">Goal weight</span>
-                  <input
-                    name="goalWeight"
-                    value={form.goalWeight}
-                    onChange={onChange}
-                    type="number"
-                    placeholder="e.g. 75"
-                    className="flex-1 outline-none text-[#3B0764] bg-transparent placeholder:text-[#3B0764]/40"
-                  />
-                  <span className="text-xs text-[#3B0764]/60">kg</span>
-                </label>
+                <UnitField
+                  label="Current weight"
+                  name="currentWeight"
+                  value={form.currentWeight}
+                  onChange={onChange}
+                  placeholder="e.g. 92"
+                  unit="kg"
+                />
+                <UnitField
+                  label="Goal weight"
+                  name="goalWeight"
+                  value={form.goalWeight}
+                  onChange={onChange}
+                  placeholder="e.g. 75"
+                  unit="kg"
+                />
               </div>
 
               {/* Height & Age */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
-                  <span className="text-sm min-w-[110px]">Height</span>
-                  <input
-                    name="height"
-                    value={form.height}
-                    onChange={onChange}
-                    type="number"
-                    placeholder="e.g. 173"
-                    className="flex-1 outline-none text-[#3B0764] bg-transparent placeholder:text-[#3B0764]/40"
-                  />
-                  <span className="text-xs text-[#3B0764]/60">cm</span>
-                </label>
-
-                <label className="flex items-center gap-2 bg-white/50 border border-white/70 rounded-2xl px-3 py-2 text-[#6B21A8]">
-                  <span className="text-sm min-w-[110px]">Age</span>
-                  <input
-                    name="age"
-                    value={form.age}
-                    onChange={onChange}
-                    type="number"
-                    placeholder="e.g. 20"
-                    className="flex-1 outline-none text-[#3B0764] bg-transparent placeholder:text-[#3B0764]/40"
-                  />
-                  <span className="text-xs text-[#3B0764]/60">yrs</span>
-                </label>
+                <UnitField
+                  label="Height"
+                  name="height"
+                  value={form.height}
+                  onChange={onChange}
+                  placeholder="e.g. 173"
+                  unit="cm"
+                />
+                <UnitField
+                  label="Age"
+                  name="age"
+                  value={form.age}
+                  onChange={onChange}
+                  placeholder="e.g. 20"
+                  unit="yrs"
+                />
               </div>
 
               {/* Error */}
