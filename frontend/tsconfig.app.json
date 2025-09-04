@@ -8,12 +8,14 @@
     "skipLibCheck": true,
 
     /* Bundler mode */
-    "moduleResolution": "bundler",
+    "moduleResolution": "Bundler",         // <- capital B (TS 5+)
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "types": ["vite/client"],              // ✅ add this
+    "forceConsistentCasingInFileNames": true, // ✅ add this
 
     /* Linting */
     "strict": true,

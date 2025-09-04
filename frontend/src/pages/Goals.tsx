@@ -3,7 +3,7 @@ import Navbar from "../components/Navbar";
 import { dailyLogService } from "../services/dailyLogService";
 import { goalsService } from "../services/goalsService";
 import type { Goals } from "../services/goalsService";
-import type { DualRange } from "../services/goalsService";
+
 
 import {
   ResponsiveContainer,

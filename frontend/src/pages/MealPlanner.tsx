@@ -7,8 +7,8 @@ import pantryService from "../services/pantryService";
 import type { MealPlan } from "../services/mealPlanService";
 import { mealPlanService } from "../services/mealPlanService"; // ✅ FIXED missing import
 import aiMealService from "../services/aiMealService";
-import nutritionixService from "../services/nutritionixService";
 import { dailyLogService } from "../services/dailyLogService";
+import nutritionixService from "../services/nutritionixService"
 
 // ---------- Local types ----------
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";

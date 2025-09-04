@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
+
 import { dailyLogService } from "../services/dailyLogService";
 import { goalsService } from "../services/goalsService";
+import type { Goals } from "../services/goalsService"; // ✅ use service type (has {min,max} ranges)
+
 import {
   ResponsiveContainer,
   LineChart as RLineChart,
@@ -13,6 +16,7 @@ import {
   Tooltip,
   Legend,
   ReferenceLine,
+  ReferenceArea, // ✅ to show min→max band
   CartesianGrid,
   PieChart,
   Pie,
@@ -25,16 +29,6 @@ type Log = {
   weight?: { value: number; measuredAt?: string } | number;
   activity?: { type: string; steps?: number; duration?: number };
   macros?: { calories: number; carbs: number; protein: number; fat: number; fiber: number };
-};
-
-type Goals = {
-  stepsTarget?: number;
-  workoutType?: string;
-  workoutDuration?: number;
-  macros?: { calories?: number; carbs?: number; protein?: number; fat?: number; fiber?: number };
-  streak?: number;
-  currentWeight?: number;
-  goalWeight?: number;
 };
 
 // ---------- Helpers ----------
@@ -80,9 +74,7 @@ const Card: React.FC<{
   className?: string;
   right?: React.ReactNode;
 }> = ({ title, subtitle, children, className = "", right }) => (
-  <section
-    className={`group [perspective:1200px] ${className}`}
-  >
+  <section className={`group [perspective:1200px] ${className}`}>
     <div
       className="rounded-[28px] p-4 md:p-6 bg-white/25 backdrop-blur-xl border border-white/60
                  shadow-[0_8px_30px_rgba(0,0,0,0.08)]
@@ -128,7 +120,7 @@ const ButtonChip: React.FC<
 // ---------- Main ----------
 const Trends: React.FC = () => {
   const [logs, setLogs] = useState<Log[]>([]);
-  const [goals, setGoals] = useState<Goals | null>(null);
+  const [goals, setGoals] = useState<Goals | null>(null); // ✅ use service type
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -140,7 +132,7 @@ const Trends: React.FC = () => {
       try {
         const [l, g] = await Promise.all([dailyLogService.getLogs(), goalsService.getGoals()]);
         setLogs(Array.isArray(l) ? l : []);
-        setGoals(g || null);
+        setGoals(g || null); // ✅ types now align
       } catch (e) {
         console.error("Trends load error:", e);
       } finally {
@@ -227,7 +219,14 @@ const Trends: React.FC = () => {
     };
   }, [logs, goals, range]);
 
-  const macroGoalValue = goals?.macros?.[macroMetric] ?? undefined;
+  // ✅ goals.macros entries are DualRange-like {min,max}. Compute band + midpoint.
+  const macroRange = goals?.macros?.[macroMetric] as { min?: number; max?: number } | undefined;
+  const macroMin = macroRange?.min ?? undefined;
+  const macroMax = macroRange?.max ?? undefined;
+  const macroMid =
+    macroMin != null && macroMax != null
+      ? Math.round((macroMin + macroMax) / 2)
+      : macroMax ?? macroMin ?? undefined;
 
   // Loading & empty
   if (loading) {
@@ -410,9 +409,11 @@ const Trends: React.FC = () => {
               }
               className="lg:col-span-2"
               subtitle={
-                macroGoalValue != null
-                  ? `Goal: ${macroMetric === "calories" ? macroGoalValue + " kcal" : macroGoalValue + " g"}`
-                  : "Set your macro goals in Goals page to see target lines"
+                macroMin != null && macroMax != null
+                  ? `Goal band: ${macroMin}–${macroMax} ${macroMetric === "calories" ? "kcal" : "g"}`
+                  : macroMid != null
+                  ? `Goal: ${macroMid} ${macroMetric === "calories" ? "kcal" : "g"}`
+                  : "Set your macro goals in Goals page to see targets"
               }
             >
               <div className="h-72 w-full">
@@ -423,9 +424,14 @@ const Trends: React.FC = () => {
                     <YAxis tick={{ fontSize: 11, fill: "#3B0764" }} width={40} />
                     <Tooltip contentStyle={tooltipStyle} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
+                    {/* User data */}
                     <Bar dataKey={macroMetric} fill={macroBarColor} radius={[6, 6, 0, 0]} />
-                    {macroGoalValue != null && (
-                      <ReferenceLine y={macroGoalValue} stroke="#F37748" strokeDasharray="6 4" />
+                    {/* Goal band + midpoint */}
+                    {macroMin != null && macroMax != null && (
+                      <ReferenceArea y1={macroMin} y2={macroMax} fill="#FBCFE8" fillOpacity={0.18} />
+                    )}
+                    {macroMid != null && (
+                      <ReferenceLine y={macroMid} stroke="#F37748" strokeDasharray="6 4" />
                     )}
                   </RBarChart>
                 </ResponsiveContainer>
