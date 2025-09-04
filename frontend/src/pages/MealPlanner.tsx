@@ -229,36 +229,19 @@ const MealPlannerApp: React.FC = () => {
 const MealCard: React.FC<{ title: string; mealType: MealType }> = ({ title, mealType }) => {
   const c = cards[mealType];
 
-  // Clear meal and return to buttons
-  const resetMeal = () => {
-    setCards((prev) => ({
-      ...prev,
-      [mealType]: {
-        name: "—",
-        macros: { calories: 0, carbs: 0, protein: 0, fibre: 0 },
-      },
-    }));
-    if (plan?._id) {
-      const updatedMeals = (plan.meals || []).filter(
-        (m: any) => !(m.date === todayISO() && m.mealType === mealType)
-      );
-      mealPlanService.update({ ...plan, meals: updatedMeals }).then(setPlan);
-    }
-  };
-
-  // Log this meal to DailyLog
-  const logAsToday = async () => {
+  const handleLogMeal = async () => {
     try {
+      const today = todayISO();
       await dailyLogService.addEntry({
-        date: todayISO(),
+        date: today,
         mealType,
         name: c.name,
         macros: c.macros,
       });
       alert(`${title} logged successfully!`);
     } catch (err) {
-      console.error("Failed to log meal:", err);
-      alert("Could not log meal.");
+      console.error("❌ Failed to log meal:", err);
+      alert("Failed to log meal");
     }
   };
 
@@ -267,8 +250,8 @@ const MealCard: React.FC<{ title: string; mealType: MealType }> = ({ title, meal
       <h2 className="text-2xl font-semibold text-blue-800 text-center mb-4">{title}</h2>
 
       {c.name === "—" ? (
-        // When no meal exists → show buttons
-        <div className="space-y-3">
+        // Show action buttons when no meal yet
+        <div className="space-y-3 mb-4">
           <button
             className="w-full bg-orange-400 hover:bg-orange-500 text-white font-medium py-3 px-6 rounded-xl"
             onClick={() => onGenerateFromPantry(mealType)}
@@ -283,7 +266,7 @@ const MealCard: React.FC<{ title: string; mealType: MealType }> = ({ title, meal
           </button>
         </div>
       ) : (
-        // When meal exists → show macros + Change + Log buttons
+        // Show meal + macros once something is selected
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-lightblue rounded-xl p-4">
@@ -298,18 +281,25 @@ const MealCard: React.FC<{ title: string; mealType: MealType }> = ({ title, meal
               <p className="text-white text-sm">Fibre: {c.macros.fibre} g</p>
             </div>
           </div>
-          <div className="space-y-2">
+
+          {/* ✅ New action buttons */}
+          <div className="flex gap-3">
             <button
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-xl"
-              onClick={logAsToday}
+              onClick={handleLogMeal}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-xl"
             >
               Log as today’s {title}
             </button>
             <button
-              className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-xl"
-              onClick={resetMeal}
+              onClick={() =>
+                setCards((prev) => ({
+                  ...prev,
+                  [mealType]: { name: "—", macros: { calories: 0, carbs: 0, protein: 0, fibre: 0 } },
+                }))
+              }
+              className="flex-1 bg-gray-300 hover:bg-gray-400 text-black font-medium py-2 px-4 rounded-xl"
             >
-              Change Meal
+              Back
             </button>
           </div>
         </div>
@@ -317,7 +307,6 @@ const MealCard: React.FC<{ title: string; mealType: MealType }> = ({ title, meal
     </div>
   );
 };
-
 
   // ---- Daily totals
   const totals = (["breakfast", "lunch", "dinner", "snack"] as MealType[]).reduce(

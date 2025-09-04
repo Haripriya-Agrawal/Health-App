@@ -3,10 +3,21 @@ import axios from "axios";
 import { API_BASE_URL } from "./apiConfig";
 
 export type MealsPayload = {
-  breakfast?: string;
-  lunch?: string;
-  snacks?: string;
-  dinner?: string;
+  breakfast?: string | MealEntry;
+  lunch?: string | MealEntry;
+  snacks?: string | MealEntry;
+  dinner?: string | MealEntry;
+};
+
+export type MealEntry = {
+  name: string;
+  rawText?: string; // original user input (for Nutritionix)
+  macros?: {
+    calories: number;
+    carbs: number;
+    protein: number;
+    fibre: number;
+  }; // structured macros (for AI/MealPlanner)
 };
 
 const auth = () => {
@@ -35,7 +46,7 @@ export const dailyLogService = {
       { meals },
       { headers: auth() }
     );
-    return res.data; // expect { macros: {...} }
+    return res.data; // expect { macros: {...}, log: {...} }
   },
 
   getLogs: async () => {
@@ -45,12 +56,13 @@ export const dailyLogService = {
     return res.data;
   },
 
-  // ✅ NEW: Add entry (for MealPlanner sync)
+  // ✅ NEW: Add or update a meal entry
   addEntry: async (entry: {
     date: string;
     mealType: "breakfast" | "lunch" | "dinner" | "snack";
     name: string;
-    macros: { calories: number; carbs: number; protein: number; fibre: number };
+    rawText?: string;
+    macros?: { calories: number; carbs: number; protein: number; fibre: number };
   }) => {
     const res = await axios.post(`${API_BASE_URL}/daily-log`, entry, {
       headers: { ...auth(), "Content-Type": "application/json" },

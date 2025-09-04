@@ -4,12 +4,28 @@ import { ActivitySchema } from "./Activity";
 import { MealsSchema } from "./Meal";
 import { WeightSchema } from "./Weight";
 
+export interface IMealEntry {
+  name: string;
+  rawText?: string;
+  macros?: {
+    calories: number;
+    carbs: number;
+    protein: number;
+    fibre: number;
+  };
+}
+
 export interface IDailyLog extends Document {
   user: mongoose.Types.ObjectId;
   date: string; // YYYY-MM-DD
   weight?: { value: number; measuredAt: "morning" | "evening" | "night" };
   activity?: { type: string; steps?: number; duration?: number };
-  meals?: { breakfast?: string; lunch?: string; snacks?: string; dinner?: string };
+  meals?: {
+    breakfast?: IMealEntry;
+    lunch?: IMealEntry;
+    snacks?: IMealEntry;
+    dinner?: IMealEntry;
+  };
   macros?: { calories: number; carbs: number; protein: number; fat: number; fiber: number };
 }
 
